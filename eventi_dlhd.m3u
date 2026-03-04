@@ -2,18 +2,6 @@
 #EXTINF:-1 tvg-name="DADDYLIVE" group-title="Eventi Live DLHD",DADDYLIVE
 https://example.com.m3u8
 
-#EXTINF:-1 tvg-id="italyseriebbari1908vsempoli" tvg-name="Soccer | Italy - Serie B : Bari 1908 vs Empoli (21:00)" tvg-logo="https://raw.githubusercontent.com/darietto17/TV/main/logos/Bari 1908_vs_Empoli.png" group-title="Eventi Live DLHD",Soccer | Italy - Serie B : Bari 1908 vs Empoli (21:00)
-https://dlhd.dad/watch.php?id=158
-
-#EXTINF:-1 tvg-id="italyseriebjuvestabiavssampdoria" tvg-name="Soccer | Italy - Serie B : Juve Stabia vs Sampdoria (21:00)" tvg-logo="https://raw.githubusercontent.com/darietto17/TV/main/logos/Juve Stabia_vs_Sampdoria.png" group-title="Eventi Live DLHD",Soccer | Italy - Serie B : Juve Stabia vs Sampdoria (21:00)
-https://dlhd.dad/watch.php?id=159
-
-#EXTINF:-1 tvg-id="italyseriebpalermovsmantova" tvg-name="Soccer | Italy - Serie B : Palermo vs Mantova (21:00)" tvg-logo="https://raw.githubusercontent.com/darietto17/TV/main/logos/Palermo_vs_Mantova.png" group-title="Eventi Live DLHD",Soccer | Italy - Serie B : Palermo vs Mantova (21:00)
-https://dlhd.dad/watch.php?id=160
-
-#EXTINF:-1 tvg-id="italyseriebfrosinonevspescara" tvg-name="Soccer | Italy - Serie B : Frosinone vs Pescara (21:00)" tvg-logo="https://raw.githubusercontent.com/darietto17/TV/main/logos/Frosinone_vs_Pescara.png" group-title="Eventi Live DLHD",Soccer | Italy - Serie B : Frosinone vs Pescara (21:00)
-https://dlhd.dad/watch.php?id=161
-
 #EXTINF:-1 tvg-id="englandpremierleaguebrightonamphovealbionvsarsenal" tvg-name="Soccer | England - Premier League : Brighton &amp; Hove Albion vs Arsenal (21:30)" tvg-logo="https://raw.githubusercontent.com/darietto17/TV/main/logos/Brighton &amp; Hove Albion_vs_Arsenal.png" group-title="Eventi Live DLHD",Soccer | England - Premier League : Brighton &amp; Hove Albion vs Arsenal (21:30)
 https://dlhd.dad/watch.php?id=5
 
@@ -40,7 +28,4 @@ https://dlhd.dad/watch.php?id=882
 
 #EXTINF:-1 tvg-id="italycoppaitalialaziovsatalanta" tvg-name="Soccer | Italy - Coppa Italia : Lazio vs Atalanta (22:00)" tvg-logo="https://raw.githubusercontent.com/darietto17/TV/main/logos/Lazio_vs_Atalanta.png" group-title="Eventi Live DLHD",Soccer | Italy - Coppa Italia : Lazio vs Atalanta (22:00)
 https://dlhd.dad/watch.php?id=854
-
-#EXTINF:-1 tvg-id="tennisatpmastersampwta1000indianwells" tvg-name="Tennis | Tennis: ATP Masters &amp; WTA 1000 Indian Wells (21:00)" tvg-logo="https://cdn.inksoft.com/images/publishers/16411/stores/AHSTennis_/img/socialmedia.png" group-title="Eventi Live DLHD",Tennis | Tennis: ATP Masters &amp; WTA 1000 Indian Wells (21:00)
-https://dlhd.dad/watch.php?id=576
 
