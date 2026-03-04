@@ -24,7 +24,10 @@ class M3UParser {
                 // Extract name (after the comma)
                 val commaIndex = line.lastIndexOf(',')
                 name = if (commaIndex != -1) line.substring(commaIndex + 1).trim() else ""
-            } else if (!line.startsWith("#")) {
+            } else if (line.startsWith("#")) {
+                // Ignore other comments/directives like #EXTM3U or plain # COMMENTS
+                continue
+            } else if (line.isNotEmpty()) {
                 // This is the URL
                 val url = line
                 if (url.isNotEmpty() && name.isNotEmpty()) {
