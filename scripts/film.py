@@ -768,6 +768,8 @@ def main():
         print("\nMake sure to set your TMDB_API_KEY environment variable:")
         print("1. Get your API key from https://www.themoviedb.org/settings/api")
         print("2. Create a .env file with: TMDB_API_KEY=your_api_key_here")
+        import sys
+        sys.exit(1)
 
 if __name__ == "__main__":
     main() 
