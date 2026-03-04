@@ -1,4 +1,12 @@
 import requests
+import sys
+import io
+
+try:
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+except Exception:
+    pass
+
 import os
 import re
 import concurrent.futures
@@ -82,6 +90,9 @@ def merger_playlist():
             response.raise_for_status()
             playlist = response.text
         else:
+            if not os.path.exists(source):
+                print(f"[!] File locale non trovato: {source}")
+                return ""
             with open(source, 'r', encoding='utf-8') as f:
                 playlist = f.read()
         
@@ -194,6 +205,9 @@ def merger_playlistworld():
             response.raise_for_status()
             playlist = response.text
         else:
+            if not os.path.exists(source):
+                print(f"[!] File locale non trovato: {source}")
+                return ""
             with open(source, 'r', encoding='utf-8') as f:
                 playlist = f.read()
         
@@ -807,9 +821,20 @@ def eventi_dlhd_m3u8_generator_world():
         now = datetime.now()  # ora attuale completa (data+ora) 
         yesterday_date = (now - timedelta(days=1)).date() # Data di ieri
      
+        import os
+        if not os.path.exists(path):
+            print(f"[!] File JSON mancante: {path}")
+            return {}
+
         with open(path, "r", encoding="utf-8") as f: 
-            data = json.load(f) 
-     
+            try:
+                data = json.load(f) 
+            except json.JSONDecodeError:
+                return {}
+
+        if not data or not isinstance(data, dict):
+            return {}
+
         categorized_channels = {} 
      
         for date_key, sections in data.items(): 
@@ -1393,10 +1418,20 @@ def eventi_dlhd_m3u8_generator():
         keywords = {"italy", "rai", "italia", "it"} 
         now = datetime.now()  # ora attuale completa (data+ora) 
         yesterday_date = (now - timedelta(days=1)).date() # Data di ieri
-     
+        import os
+        if not os.path.exists(path):
+            print(f"[!] File JSON mancante: {path}")
+            return {}
+
         with open(path, "r", encoding="utf-8") as f: 
-            data = json.load(f) 
-     
+            try:
+                data = json.load(f) 
+            except json.JSONDecodeError:
+                return {}
+
+        if not data or not isinstance(data, dict):
+            return {}
+
         categorized_channels = {} 
      
         for date_key, sections in data.items(): 
@@ -2461,7 +2496,7 @@ def italy_channels():
                 }
             }
         }
-        resp = requests.post("https://vavoo.to/mediahubmx-signature.json", json=data, headers=headers, timeout=10)
+        resp = requests.post("https://vavoo.to/mediahubmx-signature.json", json=data, headers=headers, timeout=10, verify=False)
         return resp.json().get("signature")
 
     def vavoo_groups():
@@ -2877,7 +2912,7 @@ def italy_channels():
                     "cursor": cursor,
                     "clientVersion": "3.0.2"
                 }
-                resp = requests.post("https://vavoo.to/mediahubmx-catalog.json", json=data, headers=headers, timeout=10)
+                resp = requests.post("https://vavoo.to/mediahubmx-catalog.json", json=data, headers=headers, timeout=10, verify=False)
                 r = resp.json()
                 items = r.get("items", [])
                 all_channels.extend(items)
@@ -3219,7 +3254,7 @@ def world_channels_generator():
                 }
             }
         }
-        resp = requests.post("https://vavoo.to/mediahubmx-signature.json", json=data, headers=headers, timeout=10)
+        resp = requests.post("https://vavoo.to/mediahubmx-signature.json", json=data, headers=headers, timeout=10, verify=False)
         return resp.json().get("signature")
     
     def vavoo_groups():
@@ -3257,7 +3292,7 @@ def world_channels_generator():
                     "cursor": cursor,
                     "clientVersion": "3.0.2"
                 }
-                resp = requests.post("https://vavoo.to/mediahubmx-catalog.json", json=data, headers=headers, timeout=10)
+                resp = requests.post("https://vavoo.to/mediahubmx-catalog.json", json=data, headers=headers, timeout=10, verify=False)
                 r = resp.json()
                 items = r.get("items", [])
                 all_channels.extend(items)
@@ -3522,27 +3557,27 @@ def main():
                 print("[INFO] Generazione eventi_dlhd.m3u8 saltata: CANALI_DADDY non è 'si'.")
         except Exception as e:
             print(f"Errore durante la generazione eventi_dlhd.m3u8: {e}")
-            return
+            # return rimossa per permettere la generazione finale
 
         # EPG Merger
         try:
             epg_merger()
         except Exception as e:
             print(f"Errore durante l'esecuzione di epg_merger: {e}")
-            return
+            # return rimossa
 
         # Canali Italia
         try:
             italy_channels()
         except Exception as e:
             print(f"Errore durante l'esecuzione di italy_channels: {e}")
-            return
+            # return rimossa
             
         try:
             sportsonline()
         except Exception as e:
             print(f"Errore durante l'esecuzione di sportsonline: {e}")
-            return
+            # return rimossa
         
         # Canali World e Merge finale
         try:
