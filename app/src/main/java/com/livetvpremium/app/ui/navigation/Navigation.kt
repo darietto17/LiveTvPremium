@@ -44,7 +44,7 @@ fun AppNavigation(
         composable(Screen.StartupSync.route) {
             StartupSyncScreen(
                 viewModel = mainViewModel,
-                playlistUrl = "https://raw.githubusercontent.com/darietto17/LiveTvPremium/refs/heads/master/scripts/film.m3u", // Usa la m3u di default o prendila dalle settings
+                playlistUrl = "https://raw.githubusercontent.com/darietto17/LiveTvPremium/refs/heads/master/film.m3u", // Root M3U
                 onSyncComplete = {
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.StartupSync.route) { inclusive = true }
