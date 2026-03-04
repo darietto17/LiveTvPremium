@@ -1,0 +1,46 @@
+# Guida alla Rigenerazione del Progetto LiveTV
+
+Se dovessi ricostruire l'applicazione da zero, ecco i passi tecnici necessari:
+
+## 1. Setup Iniziale
+- Creare un nuovo progetto **Empty Compose Activity** in Android Studio.
+- Configurare [build.gradle.kts](file:///c:/Users/Dario/Desktop/Livetv/TV/LiveTvApp/build.gradle.kts) con le dipendenze:
+    - `Media3` (ExoPlayer, UI, HLS, Dash, OkHttp).
+    - `Coil` (Caricamento immagini).
+    - `Ktor` (Client HTTP e Serializzazione JSON).
+    - `Navigation Compose` (Gestione schermate).
+    - `libvlc-all` (Player VLC secondario).
+    - `DataStore` (Preferenze impostazioni).
+
+## 2. Architettura Base (MVVM)
+- **Model**: Classi [M3UItem](file:///C:/Users/Dario/AppData/Local/Temp/recovered_source/sources/com/livetv/app/model/M3UItem.java#9-194), `EpgItem`.
+- **Repository**: 
+    - `M3UParser`: Logica per scaricare e leggere file [.m3u](file:///c:/Users/Dario/Desktop/Livetv/TV/LiveTvApp/app/src/main/res/raw/film.m3u).
+    - `EpgRepository`: Logica per scaricare e leggere file [.xml](file:///c:/Users/Dario/Desktop/Livetv/TV/LiveTvApp/app/src/main/res/values/attrs.xml) della guida TV.
+    - `TmdbRepository`: Chiamate API a `themoviedb.org`.
+- **ViewModel**:
+    - [MainViewModel](file:///c:/Users/Dario/Desktop/Livetv/TV/LiveTvApp/app/src/main/java/com/livetv/app/ui/viewmodel/MainViewModel.kt#19-103): Gestisce le liste canali, il caricamento e la logica di ricerca.
+    - [SettingsViewModel](file:///c:/Users/Dario/Desktop/Livetv/TV/LiveTvApp/app/src/main/java/com/livetv/app/ui/viewmodel/SettingsViewModel.kt#30-270): Gestisce il salvataggio dei Token GitHub e delle preferenze del player.
+
+## 3. Implementazione Schermate (UI)
+Seguire questo ordine di creazione:
+1. **StartupSyncScreen**: Lo splash screen che mostra il caricamento e avvia il parsing.
+2. **HomeScreen**: La dashboard con caroselli per Live, Film, Serie e pulsante Impostazioni.
+3. **GroupListScreen**: Lista dei gruppi (es. "Sport", "Cinema") filtrati per categoria.
+4. **ContentScreen**: Griglia dei canali o film all'interno di un gruppo specifico.
+5. **DetailsScreen**: Pagina di dettaglio per Film/Serie con locandina (TMDB) e tasto "Riproduci".
+6. **PlayerScreen**: Il player a tutto schermo che integra ExoPlayer e VLC, con supporto D-pad.
+
+## 4. Logica del Player
+- Implementare `ExoPlayerScreen` e `VlcPlayerScreen`.
+- Aggiungere il supporto per il **Picture-in-Picture** sovrascrivendo [onUserLeaveHint](file:///c:/Users/Dario/Desktop/Livetv/TV/LiveTvApp/app/src/main/java/com/livetv/app/MainActivity.kt#85-94) nella [MainActivity](file:///c:/Users/Dario/Desktop/Livetv/TV/LiveTvApp/app/src/main/java/com/livetv/app/MainActivity.kt#75-100).
+- Creare un overlay personalizzato per la selezione di **Audio e Sottotitoli**.
+
+## 5. Script Esterni (GitHub Actions)
+- Configurare il file [scripts/lista.py](file:///c:/Users/Dario/Desktop/Livetv/TV/scripts/lista.py).
+- Creare il file [custom_groups.json](file:///c:/Users/Dario/Desktop/Livetv/TV/custom_groups.json) per mappare i nomi dei canali nei gruppi desiderati.
+- Impostare `main.yml` in `.github/workflows` per avviare lo script automaticamente.
+
+## 6. Automazione della Ricostruzione (Prompt per AI)
+Se vuoi che l'IA rigeneri il codice, usa questo prompt:
+> "Genera un'app Android in Kotlin/Compose. Caratteristiche: Parsing M3U8, EPG XMLTV, Integrazione TMDB per locandine, Player duale ExoPlayer/VLC, Supporto PiP, Navigazione per telecomando Android TV e Sincronizzazione automatica tramite GitHub API all'avvio."

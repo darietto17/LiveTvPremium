@@ -1,0 +1,43 @@
+# Prompt per Ricostruzione Completa IA
+
+Copia e incolla il seguente testo in una nuova chat con un assistente IA (come Antigravity, Claude o GPT) per rigenerare l'applicazione:
+
+---
+
+### **OBIETTIVO: Ricostruzione App Android "LiveTV Premium"**
+
+Agisci come un esperto sviluppatore Android Senior. Ricostruisci da zero un'app streaming premium in Kotlin/Compose seguendo queste specifiche tecniche:
+
+#### **1. Stack Tecnologico**
+- **Linguaggio**: Kotlin 1.9.22
+- **UI**: Jetpack Compose (Material 3)
+- **Networking**: Ktor Client con Serialization JSON
+- **Multimedia**: Media3 (ExoPlayer) + libVLC (Dual Player)
+- **Immagini**: Coil
+- **Persistent State**: DataStore Preferences e Playback Progress salvato in SharedPreferences.
+
+#### **2. Architettura e Schermate**
+Implementa un'architettura **MVVM** con le seguenti schermate:
+-Crea uan repository Github sul mio profilo e collegala al progetto. 
+- **StartupSync**: Carica la playlist M3U8 all'avvio da un URL GitHub, mostra una barra di progresso e salva i risultati in memoria. 
+Gli URL m3u devono essere generati dai python presenti nella cartella scripts, preferibilmente facendoli girare su GitHub.
+- **Home**: Dashboard con caroselli (Live, Film, Serie). In alto: icona Ricerca espandibile e icona Impostazioni.
+- **GroupList**: Grid di canali filtrati per "group-title" dalla playlist M3U.
+- **Details**: Recupera locandine e trama da **TMDB API**. Tasto "Riproduci" e "Aggiungi ai Preferiti".
+- **Player**: Overlay con controlli per D-pad (Android TV), supporto **Picture-in-Picture (PiP)**, selezione tracce Audio/Sottotitoli e supporto **DNS/Proxy** personalizzato.
+- **Settings**: Campi per GitHub Token, TMDB API Key, scelta Player predefinito (Exo/VLC) e Proxy URL.
+
+#### **3. Funzionalità Critiche**
+- **"Continua a Guardare"**: Salva la posizione in millisecondi per film e serie.
+- **Parsing M3U**: Gestisci tag `#EXTINF` per estrarre `group-title`, `tvg-id`, `tvg-logo` e [name].
+- **EPG**: Supporto per file XMLTV per mostrare il titolo del programma in onda sotto il nome del canale.
+
+#### **4. Design Estetico**
+- Tema Scuro (Glassmorphism).
+- Elevazioni (Card Elevation) e micro-animazioni di focus per Android TV.
+- Colori armoniosi (non rosso/blu base), design premium "WOW".
+
+#### **5. Istruzioni per Iniziare**
+Inizia scrivendo il file [build.gradle.kts] del modulo app con tutte le dipendenze corrette, poi procedi con la [MainActivity] e la logica di parsing della playlist.
+
+---

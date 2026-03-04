@@ -1,0 +1,32 @@
+# LiveTV Premium - Elenco Funzionalità
+
+Ecco la lista completa delle funzionalità implementate nell'applicazione LiveTV Premium:
+
+## 1. Gestione Playlist e Contenuti
+- **Supporto M3U**: Caricamento e parsing di liste canali in formato M3U/M3U8.
+- **Categorizzazione Automatica**: Suddivisione automatica tra Live TV, Film e Serie TV.
+- **Supporto EPG (Guida TV)**: Visualizzazione del programma in onda ("Now Playing") e dei programmi successivi.
+- **Sincronizzazione all'Avvio**: Aggiornamento automatico della playlist ogni volta che l'app viene aperta, con indicatore di caricamento visivo.
+
+## 2. Personalizzazione tramite Script (Lato GitHub)
+- **Custom Channel Grouping**: Logic Python ([lista.py](file:///c:/Users/Dario/Desktop/Livetv/TV/scripts/lista.py)) per riorganizzare i canali in gruppi personalizzati via [custom_groups.json](file:///c:/Users/Dario/Desktop/Livetv/TV/custom_groups.json).
+- **Canali Nascosti**: Possibilità di nascondere canali indesiderati direttamente dal server.
+
+## 3. Integrazioni Esterne
+- **TMDB (TheMovieDB)**: Recupero automatico di locandine, descrizioni e metadati per Film e Serie.
+
+## 4. Esperienza Utente (UI/UX)
+- **Design Moderno**: Interfaccia costruita con Jetpack Compose (Material 3) con estetica premium.
+- **Ricerca Espandibile**: Icona di ricerca nella barra superiore che si espande per filtrare canali e film.
+- **"Continua a Guardare"**: Memorizzazione del punto di interruzione per Film e Serie (Playback Progress).
+- **Ottimizzazione Android TV**: Supporto completo per telecomando (D-pad) e controlli multimediali.
+
+## 5. Player Video Avanzato
+- **Dual Engine**: Scelta tra **ExoPlayer** (nativo Android) e **VLC** (per massima compatibilità).
+- **Selezione Tracce**: Menu per cambiare lingua audio e sottotitoli durante la visione.
+- **Picture-in-Picture (PiP)**: Possibilità di continuare la visione in una finestra ridotta mentre si usano altre app.
+- **Proxy & DNS**: Supporto per URL proxy e DNS personalizzati per bypassare blocchi.
+
+## 6. Sicurezza e Configurazione
+- **GitHub Integration**: Inserimento automatico del Token GitHub per download sicuri.
+- **Impostazioni Avanzate**: Pannello per configurare API Key (TMDB), URL Repository e parametri di rete.
