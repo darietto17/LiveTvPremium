@@ -1840,7 +1840,8 @@ def schedule_extractor():
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             context = browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36"
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36",
+                ignore_https_errors=True
             )
             page = context.new_page()
     
@@ -1898,10 +1899,7 @@ def schedule_extractor():
             browser.close()
             return False
     
-    if __name__ == "__main__":
-        success = extract_schedule_container()
-        if not success:
-            exit(1)
+    return extract_schedule_container()
 
 def epg_eventi_dlhd_generator_world(json_file_path, output_file_path="eventi_dlhd.xml"):
     # Codice del quinto script qui
