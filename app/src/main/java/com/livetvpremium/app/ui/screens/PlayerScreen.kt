@@ -47,6 +47,7 @@ import java.net.CookieManager
 import java.net.CookiePolicy
 import java.util.concurrent.TimeUnit
 import okhttp3.JavaNetCookieJar
+import okhttp3.Protocol
 import java.nio.charset.StandardCharsets
 import com.livetvpremium.app.ui.viewmodel.SettingsViewModel
 import org.videolan.libvlc.LibVLC
@@ -263,6 +264,7 @@ fun PlayerScreen(
                     }
                     dns(customDns)
                 }
+                .protocols(listOf(Protocol.HTTP_1_1))
                 .connectTimeout(60, TimeUnit.SECONDS)
                 .readTimeout(60, TimeUnit.SECONDS)
                 .writeTimeout(60, TimeUnit.SECONDS)
