@@ -199,6 +199,11 @@ fun PlayerScreen(
                             webChromeClient = WebChromeClient()
                             webViewClient = WebViewClient()
                             
+                            layoutParams = ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT
+                            )
+                            setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
                             setBackgroundColor(0) // Black background
                             
                             // History tracking for WebEmbeds
