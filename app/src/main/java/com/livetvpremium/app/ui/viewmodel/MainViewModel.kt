@@ -47,7 +47,11 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
                 _syncState.value = SyncState.Loading(0.4f, "Parsing Live TV...")
                 val parsedLive = liveFile?.inputStream()?.use { m3uParser.parse(it) } ?: emptyList()
                 _liveItems.value = parsedLive
-                liveGroups.value = parsedLive.map { it.groupTitle }.distinct().sorted()
+                val orderedCategories = fetchOrderedCategories(githubToken, context)
+                liveGroups.value = parsedLive.map { it.groupTitle }.distinct().sortedBy { groupName ->
+                    val index = orderedCategories.indexOf(groupName)
+                    if (index == -1) Int.MAX_VALUE else index
+                }
 
                 val filmFile = getPlaylistFile("film.m3u", isCacheValid, githubToken, context)
                 _syncState.value = SyncState.Loading(0.7f, "Parsing Movies...")
@@ -106,4 +110,45 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
         return now.get(java.util.Calendar.YEAR) == syncDate.get(java.util.Calendar.YEAR) &&
                now.get(java.util.Calendar.DAY_OF_YEAR) == syncDate.get(java.util.Calendar.DAY_OF_YEAR)
     }
+
+    private suspend fun fetchOrderedCategories(token: String?, context: android.content.Context): List<String> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val file = java.io.File(context.cacheDir, "categories.json")
+                val urlString = "https://raw.githubusercontent.com/darietto17/LiveTvPremium/refs/heads/master/scripts/categories.json"
+                val connection = URL(urlString).openConnection() as HttpsURLConnection
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+                
+                if (!token.isNullOrEmpty()) {
+                    connection.setRequestProperty("Authorization", "token $token")
+                }
+                
+                val jsonString = if (connection.responseCode == 200) {
+                    val content = connection.inputStream.bufferedReader().use { it.readText() }
+                    file.outputStream().use { it.write(content.toByteArray()) }
+                    content
+                } else if (file.exists()) {
+                    file.readText()
+                } else {
+                    return@withContext defaultCategories()
+                }
+                
+                val regex = "\"([^\"]+)\"\\s*:\\s*\\[".toRegex()
+                val keys = regex.findAll(jsonString).map { it.groupValues[1] }.toList()
+                
+                if (keys.isNotEmpty()) {
+                    if ("Altri" !in keys) keys + "Altri" else keys
+                } else {
+                    defaultCategories()
+                }
+            } catch (e: Exception) {
+                defaultCategories()
+            }
+        }
+    }
+
+    private fun defaultCategories() = listOf(
+        "Intrattenimento", "Sport", "Cinema", "Documentari", "Bambini", "Musica", "News", "Eventi Live", "Altri"
+    )
 }
