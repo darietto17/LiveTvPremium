@@ -44,6 +44,10 @@ import java.net.InetAddress
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import com.livetvpremium.app.ui.viewmodel.SettingsViewModel
+import org.videolan.libvlc.LibVLC
+import org.videolan.libvlc.Media
+import org.videolan.libvlc.MediaPlayer
+import org.videolan.libvlc.util.VLCVideoLayout
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -89,14 +93,62 @@ fun PlayerScreen(
 
     Box(modifier = modifier.fillMaxSize().background(Color.Black)) {
         if (useVlcPlayer) {
-            // Placeholder for VLC Player implementation
+            val proxyUrl by settingsViewModel.proxyUrl.collectAsState()
+            val finalUrl = remember(url, proxyUrl) {
+                if (proxyUrl.isNotBlank()) {
+                    val base = if (proxyUrl.endsWith("/")) proxyUrl else "$proxyUrl/"
+                    try {
+                        val encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8.toString())
+                        "${base}manifest.m3u8?url=$encodedUrl"
+                    } catch (e: Exception) { url }
+                } else { url }
+            }
+
+            val libVlc = remember { 
+                val args = ArrayList<String>().apply {
+                    add("--http-reconnect")
+                    add("--network-caching=3000")
+                    add("--rtsp-tcp")
+                    add("--avcodec-hw=any")
+                }
+                LibVLC(context, args) 
+            }
+            val mediaPlayer = remember { MediaPlayer(libVlc) }
+            
+            DisposableEffect(finalUrl) {
+                val media = Media(libVlc, Uri.parse(finalUrl))
+                media.setHWDecoderEnabled(true, false)
+                media.addOption(":network-caching=3000")
+                media.addOption(":clock-jitter=0")
+                media.addOption(":clock-synchro=0")
+                
+                mediaPlayer.media = media
+                media.release()
+                mediaPlayer.play()
+                
+                onDispose {
+                    mediaPlayer.stop()
+                    mediaPlayer.release()
+                    libVlc.release()
+                }
+            }
+
             AndroidView(
                 factory = { ctx ->
-                    FrameLayout(ctx).apply {
+                    object : VLCVideoLayout(ctx) {
+                        override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+                            if (event.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_DOWN) {
+                                (context as? Activity)?.onBackPressed()
+                                return true
+                            }
+                            return super.dispatchKeyEvent(event)
+                        }
+                    }.apply {
                         layoutParams = ViewGroup.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.MATCH_PARENT
                         )
+                        mediaPlayer.attachViews(this, null, true, false)
                     }
                 },
                 modifier = Modifier.fillMaxSize()
