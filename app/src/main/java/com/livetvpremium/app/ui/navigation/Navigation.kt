@@ -1,6 +1,8 @@
 package com.livetvpremium.app.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -42,9 +44,12 @@ fun AppNavigation(
         modifier = modifier
     ) {
         composable(Screen.StartupSync.route) {
+            val githubToken by settingsViewModel.githubToken.collectAsState()
+            
             StartupSyncScreen(
                 viewModel = mainViewModel,
                 playlistUrl = "https://raw.githubusercontent.com/darietto17/LiveTvPremium/refs/heads/master/lista.m3u", // Root M3U
+                githubToken = githubToken,
                 onSyncComplete = {
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.StartupSync.route) { inclusive = true }

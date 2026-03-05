@@ -26,14 +26,15 @@ import com.livetvpremium.app.ui.viewmodel.SyncState
 fun StartupSyncScreen(
     viewModel: MainViewModel,
     playlistUrl: String,
+    githubToken: String? = null,
     onSyncComplete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val syncState by viewModel.syncState.collectAsState()
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(githubToken) {
         if (syncState is SyncState.Idle) {
-             viewModel.syncPlaylist(playlistUrl)
+             viewModel.syncPlaylist(playlistUrl, null, githubToken)
         }
     }
 

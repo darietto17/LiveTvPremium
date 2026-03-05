@@ -29,7 +29,7 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
 
     val groups = MutableStateFlow<List<String>>(emptyList())
     
-    fun syncPlaylist(url: String, proxyUrl: String? = null) {
+    fun syncPlaylist(url: String, proxyUrl: String? = null, token: String? = null) {
         viewModelScope.launch {
             _syncState.value = SyncState.Loading(0.1f, "Connecting to GitHub...")
             try {
@@ -37,6 +37,10 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
                     val connection = URL(url).openConnection() as HttpsURLConnection
                     connection.connectTimeout = 10000
                     connection.readTimeout = 10000
+                    
+                    if (!token.isNullOrEmpty()) {
+                        connection.setRequestProperty("Authorization", "token $token")
+                    }
                     
                     // Basic proxy handling could be added here if proxyUrl is valid
                     
