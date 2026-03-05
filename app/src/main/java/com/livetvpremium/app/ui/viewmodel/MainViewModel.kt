@@ -21,6 +21,7 @@ import java.net.URL
 import java.net.HttpURLConnection
 import javax.net.ssl.HttpsURLConnection
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
 import android.content.Intent
 import androidx.core.content.FileProvider
@@ -201,36 +202,41 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
     }
     fun syncAll(githubToken: String? = null, lastSyncTime: Long = 0L, forceSync: Boolean = false, context: android.content.Context) {
         viewModelScope.launch {
-            _syncState.value = SyncState.Loading(0.1f, "Vefication sync status...")
+            _syncState.value = SyncState.Loading(0.1f, "Verifica stato sincronizzazione...")
             try {
                 val isCacheValid = !forceSync && isToday(lastSyncTime)
                 
-                val liveFile = getPlaylistFile("lista.m3u", isCacheValid, githubToken, context)
-                _syncState.value = SyncState.Loading(0.4f, "Parsing Live TV...")
-                val parsedLive = liveFile?.inputStream()?.use { m3uParser.parse(it) } ?: emptyList()
+                // Fetch Categories in parallel with playlists
+                val categoriesDeferred = async { fetchOrderedCategories(githubToken, context) }
+
+                // Process playlists in parallel
+                val liveDeferred = async { loadPlaylistWithCache("lista.m3u", isCacheValid, githubToken, context) }
+                val filmDeferred = async { loadPlaylistWithCache("film.m3u", isCacheValid, githubToken, context) }
+                val serieDeferred = async { loadPlaylistWithCache("serie.m3u", isCacheValid, githubToken, context) }
+
+                val orderedCategories = categoriesDeferred.await()
+                
+                _syncState.value = SyncState.Loading(0.4f, "Caricamento Live TV...")
+                val parsedLive = liveDeferred.await()
                 _liveItems.value = parsedLive
-                val orderedCategories = fetchOrderedCategories(githubToken, context)
                 liveGroups.value = parsedLive.map { it.groupTitle }.distinct().sortedBy { groupName ->
                     val index = orderedCategories.indexOf(groupName)
                     if (index == -1) Int.MAX_VALUE else index
                 }
 
-                val filmFile = getPlaylistFile("film.m3u", isCacheValid, githubToken, context)
-                _syncState.value = SyncState.Loading(0.7f, "Parsing Movies...")
-                val parsedFilm = filmFile?.inputStream()?.use { m3uParser.parse(it) } ?: emptyList()
+                _syncState.value = SyncState.Loading(0.7f, "Caricamento Film...")
+                val parsedFilm = filmDeferred.await()
                 _filmItems.value = parsedFilm
                 filmGroups.value = parsedFilm.map { it.groupTitle }.distinct().sorted()
 
-                val serieFile = getPlaylistFile("serie.m3u", isCacheValid, githubToken, context)
-                _syncState.value = SyncState.Loading(0.9f, "Parsing Series...")
-                val parsedSerie = serieFile?.inputStream()?.use { m3uParser.parse(it) } ?: emptyList()
+                _syncState.value = SyncState.Loading(0.9f, "Caricamento Serie TV...")
+                val parsedSerie = serieDeferred.await()
                 _serieItems.value = parsedSerie
                 serieGroups.value = parsedSerie.map { it.groupTitle }.distinct().sorted()
 
-                // Mark success immediately - EPG loads in background
                 _syncState.value = SyncState.Success(parsedLive + parsedFilm + parsedSerie)
 
-                // Load EPG asynchronously in the background (non-blocking)
+                // Async EPG
                 launch {
                     try {
                         val epgFile = getPlaylistFile("epg.xml", isCacheValid, null, context,
@@ -239,15 +245,43 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
                             val parsed = epgFile.inputStream().use { epgParser.parse(it) }
                             _epgData.value = parsed
                         }
-                    } catch (e: Exception) {
-                        // EPG failure is non-fatal
-                        e.printStackTrace()
-                    }
-                } // Returning all just to satisfy the old Success signature, will refactor UI later.
+                    } catch (e: Exception) { e.printStackTrace() }
+                }
             } catch (e: Exception) {
                 _syncState.value = SyncState.Error(e)
             }
         }
+    }
+
+    private suspend fun loadPlaylistWithCache(
+        filename: String,
+        useCache: Boolean,
+        token: String?,
+        context: android.content.Context
+    ): List<M3UItem> = withContext(Dispatchers.IO) {
+        val jsonCacheFile = java.io.File(context.cacheDir, "$filename.cache.json")
+        val m3uFile = java.io.File(context.cacheDir, filename)
+        
+        // If we have a fresh JSON cache, use it immediately
+        if (useCache && jsonCacheFile.exists() && jsonCacheFile.length() > 0) {
+            try {
+                return@withContext Json.decodeFromString<List<M3UItem>>(jsonCacheFile.readText())
+            } catch (e: Exception) { e.printStackTrace() }
+        }
+
+        // Otherwise, download/get M3U and parse
+        val downloadedFile = getPlaylistFile(filename, useCache, token, context)
+        val items = downloadedFile?.inputStream()?.use { m3uParser.parse(it) } ?: emptyList()
+        
+        // Save to JSON cache for next time
+        if (items.isNotEmpty()) {
+            try {
+                val jsonString = Json { encodeDefaults = true }.encodeToString<List<M3UItem>>(items)
+                jsonCacheFile.writeText(jsonString)
+            } catch (e: Exception) { e.printStackTrace() }
+        }
+        
+        items
     }
 
     private suspend fun getPlaylistFile(

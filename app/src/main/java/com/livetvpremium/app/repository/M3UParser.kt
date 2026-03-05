@@ -5,6 +5,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class M3UParser {
+    private val groupTitleRegex = "group-title=\"([^\"]*)\"".toRegex()
+    private val tvgIdRegex = "tvg-id=\"([^\"]*)\"".toRegex()
+    private val tvgLogoRegex = "tvg-logo=\"([^\"]*)\"".toRegex()
+
     suspend fun parse(inputStream: java.io.InputStream): List<M3UItem> = withContext(Dispatchers.Default) {
         val items = mutableListOf<M3UItem>()
         
@@ -19,18 +23,17 @@ class M3UParser {
                 if (line.isEmpty()) continue
                 
                 if (line.startsWith("#EXTINF:")) {
-                    // Extract parameters
-                    groupTitle = extractAttribute(line, "group-title")
-                    tvgId = extractAttribute(line, "tvg-id")
-                    tvgLogo = extractAttribute(line, "tvg-logo")
+                    // Extract parameters using pre-compiled regex
+                    groupTitle = groupTitleRegex.find(line)?.groupValues?.get(1) ?: ""
+                    tvgId = tvgIdRegex.find(line)?.groupValues?.get(1) ?: ""
+                    tvgLogo = tvgLogoRegex.find(line)?.groupValues?.get(1) ?: ""
                     
                     // Extract name (after the comma)
                     val commaIndex = line.lastIndexOf(',')
                     name = if (commaIndex != -1) line.substring(commaIndex + 1).trim() else ""
                 } else if (line.startsWith("#")) {
-                    // Ignore other comments/directives like #EXTM3U or plain # COMMENTS
                     continue
-                } else if (line.isNotEmpty()) {
+                } else {
                     // This is the URL
                     val url = line
                     if (url.isNotEmpty() && name.isNotEmpty()) {
@@ -53,11 +56,5 @@ class M3UParser {
             }
         }
         items
-    }
-    
-    private fun extractAttribute(line: String, attribute: String): String {
-        val regex = "$attribute=\"([^\"]*)\"".toRegex()
-        val matchResult = regex.find(line)
-        return matchResult?.groupValues?.get(1) ?: ""
     }
 }
