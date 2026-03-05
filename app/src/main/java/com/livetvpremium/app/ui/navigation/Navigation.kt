@@ -204,6 +204,7 @@ fun AppNavigation(
         composable(Screen.Settings.route) {
             SettingsScreen(
                 viewModel = settingsViewModel,
+                mainViewModel = mainViewModel,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

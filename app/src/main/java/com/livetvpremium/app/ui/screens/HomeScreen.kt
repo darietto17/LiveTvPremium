@@ -32,6 +32,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusTarget
 import com.livetvpremium.app.ui.components.GlassCard
 import com.livetvpremium.app.ui.viewmodel.MainViewModel
 
@@ -89,8 +93,10 @@ fun HomeScreen(
 
     val watchHistory by settingsViewModel.watchHistory.collectAsState()
     
-    var selectedTab by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(0) }
+    var selectedTab by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(0) }
     var liveChannelToPlay by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<com.livetvpremium.app.model.M3UItem?>(null) }
+    
+    val bottomBarFocusRequester = remember { FocusRequester() }
 
     Scaffold(
         topBar = {
@@ -111,7 +117,10 @@ fun HomeScreen(
         },
         bottomBar = {
             NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                modifier = Modifier
+                    .focusRequester(bottomBarFocusRequester)
+                    .focusTarget()
             ) {
                 NavigationBarItem(
                     icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
@@ -154,7 +163,11 @@ fun HomeScreen(
                 modifier = modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 16.dp)
+                    .focusProperties {
+                        left = bottomBarFocusRequester
+                        right = bottomBarFocusRequester
+                    },
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 if (watchHistory.isNotEmpty()) {
@@ -315,7 +328,7 @@ fun HomeScreen(
             }
             
             if (isLargeScreen && currentGroups.isNotEmpty()) {
-                var selectedGroup by remember(selectedTab, currentGroups) { 
+                var selectedGroup by androidx.compose.runtime.saveable.rememberSaveable(selectedTab, currentGroups) { 
                     androidx.compose.runtime.mutableStateOf(currentGroups.firstOrNull() ?: "")
                 }
                 
@@ -327,7 +340,13 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Master List (Left Panel - 30%)
-                    Column(modifier = Modifier.weight(0.3f).fillMaxHeight()) {
+                    Column(modifier = Modifier
+                        .weight(0.3f)
+                        .fillMaxHeight()
+                        .focusProperties {
+                            left = bottomBarFocusRequester
+                        }
+                    ) {
                         val title = when (selectedTab) {
                             1 -> "Canali TV"
                             2 -> "Film On Demand"
@@ -373,7 +392,13 @@ fun HomeScreen(
                     }
                     
                     // Detail Grid (Right Panel - 70%)
-                    Column(modifier = Modifier.weight(0.7f).fillMaxHeight()) {
+                    Column(modifier = Modifier
+                        .weight(0.7f)
+                        .fillMaxHeight()
+                        .focusProperties {
+                            right = bottomBarFocusRequester
+                        }
+                    ) {
                         Text(
                             text = selectedGroup,
                             fontSize = 20.sp,

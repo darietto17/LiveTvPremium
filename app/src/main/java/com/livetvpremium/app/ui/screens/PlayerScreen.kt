@@ -3,6 +3,7 @@ package com.livetvpremium.app.ui.screens
 import android.net.Uri
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.view.KeyEvent
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -23,6 +24,10 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
 import androidx.media3.common.MimeTypes
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.extractor.DefaultExtractorsFactory
+import androidx.media3.extractor.ts.DefaultTsPayloadReaderFactory
 import com.livetvpremium.app.ui.viewmodel.SettingsViewModel
 
 @OptIn(UnstableApi::class)
@@ -114,7 +119,18 @@ fun PlayerScreen(
                     setParameters(buildUponParameters().setPreferredAudioLanguage("it"))
                 }
                 
-                val mediaSourceFactory = DefaultMediaSourceFactory(context)
+                val httpDataSourceFactory = DefaultHttpDataSource.Factory()
+                    .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                    .setAllowCrossProtocolRedirects(true)
+                    
+                val dataSourceFactory = DefaultDataSource.Factory(context, httpDataSourceFactory)
+                
+                val extractorsFactory = DefaultExtractorsFactory()
+                    .setConstantBitrateSeekingEnabled(true)
+                    .setTsExtractorFlags(DefaultTsPayloadReaderFactory.FLAG_ALLOW_NON_IDR_KEYFRAMES)
+                    
+                val mediaSourceFactory = DefaultMediaSourceFactory(context, extractorsFactory)
+                    .setDataSourceFactory(dataSourceFactory)
                 
                 val player = ExoPlayer.Builder(context)
                     .setTrackSelector(trackSelector)
@@ -124,7 +140,10 @@ fun PlayerScreen(
                         val mediaItemBuilder = MediaItem.Builder().setUri(Uri.parse(url))
                         
                         // Help ExoPlayer identify M3U8 streams if they lack the correct extension or use proxy
-                        if (url.contains(".m3u8", ignoreCase = true) || groupName.contains("live", ignoreCase = true) || url.contains("proxy")) {
+                        val isM3u8 = url.contains(".m3u8", ignoreCase = true) || 
+                            (!url.contains(".ts", ignoreCase = true) && !url.contains(".mp4", ignoreCase = true) && !url.contains(".mkv", ignoreCase = true) && (groupName.contains("live", ignoreCase = true) || url.contains("proxy", ignoreCase = true)))
+                            
+                        if (isM3u8) {
                             mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
                         } else if (url.contains(".ts", ignoreCase = true)) {
                             mediaItemBuilder.setMimeType(MimeTypes.VIDEO_MP2T)
@@ -132,6 +151,15 @@ fun PlayerScreen(
                             mediaItemBuilder.setMimeType(MimeTypes.VIDEO_MP4)
                         } else if (url.contains(".mkv", ignoreCase = true)) {
                             mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_MATROSKA)
+                        } else {
+                            // Se non c'è un'estensione chiara nell'URL:
+                            // - Se è una serie/film (VOD), proviamo col fallback MP4 (molto comune per i server proxy VOD)
+                            // - Se è Live/TV, proviamo col fallback M3U8
+                            if (isVod) {
+                                mediaItemBuilder.setMimeType(MimeTypes.VIDEO_MP4)
+                            } else {
+                                mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
+                            }
                         }
 
                         setMediaItem(mediaItemBuilder.build())
@@ -190,13 +218,55 @@ fun PlayerScreen(
             exoPlayer?.let { player ->
                 AndroidView(
                     factory = { ctx ->
-                        PlayerView(ctx).apply {
+                        object : PlayerView(ctx) {
+                            override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+                                // Se il pannello dei controlli di ExoPlayer non è visibile, alla prima pressione di un tasto
+                                // (D-PAD o ENTER) vogliamo semplicemente mostrare il pannello senza eseguire l'azione
+                                if (!isControllerFullyVisible) {
+                                    val actionCode = event.keyCode
+                                    if (actionCode == KeyEvent.KEYCODE_DPAD_UP ||
+                                        actionCode == KeyEvent.KEYCODE_DPAD_DOWN ||
+                                        actionCode == KeyEvent.KEYCODE_DPAD_LEFT ||
+                                        actionCode == KeyEvent.KEYCODE_DPAD_RIGHT ||
+                                        actionCode == KeyEvent.KEYCODE_ENTER ||
+                                        actionCode == KeyEvent.KEYCODE_DPAD_CENTER
+                                    ) {
+                                        if (event.action == KeyEvent.ACTION_DOWN) {
+                                            showController()
+                                        }
+                                        return true // Evento consumato: mostriamo solo l'UI
+                                    }
+                                }
+
+                                // Gestione esplicita dei tasti Media per il play/pausa del telecomando
+                                if (event.action == KeyEvent.ACTION_DOWN) {
+                                    when (event.keyCode) {
+                                        KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
+                                            if (player.isPlaying) player.pause() else player.play()
+                                            showController()
+                                            return true
+                                        }
+                                        KeyEvent.KEYCODE_MEDIA_PLAY -> {
+                                            player.play()
+                                            showController()
+                                            return true
+                                        }
+                                        KeyEvent.KEYCODE_MEDIA_PAUSE -> {
+                                            player.pause()
+                                            showController()
+                                            return true
+                                        }
+                                    }
+                                }
+                                
+                                return super.dispatchKeyEvent(event)
+                            }
+                        }.apply {
                             this.player = player
                             useController = true
                             setShowSubtitleButton(true)
                             setShowNextButton(false)
                             setShowPreviousButton(false)
-                            // D-pad support requires deeper customization of controller layout
                         }
                     },
                     modifier = Modifier.fillMaxSize()

@@ -15,6 +15,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import java.net.URL
+import java.net.HttpURLConnection
 import javax.net.ssl.HttpsURLConnection
 
 sealed class SyncState {
@@ -248,12 +249,56 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
 
     private fun isToday(timestamp: Long): Boolean {
         if (timestamp == 0L) return false
-        val now = java.util.Calendar.getInstance()
-        val syncDate = java.util.Calendar.getInstance().apply { timeInMillis = timestamp }
-        return now.get(java.util.Calendar.YEAR) == syncDate.get(java.util.Calendar.YEAR) &&
-               now.get(java.util.Calendar.DAY_OF_YEAR) == syncDate.get(java.util.Calendar.DAY_OF_YEAR)
+        val cal1 = java.util.Calendar.getInstance()
+        val cal2 = java.util.Calendar.getInstance()
+        cal1.timeInMillis = timestamp
+        return cal1.get(java.util.Calendar.YEAR) == cal2.get(java.util.Calendar.YEAR) &&
+               cal1.get(java.util.Calendar.DAY_OF_YEAR) == cal2.get(java.util.Calendar.DAY_OF_YEAR)
     }
 
+    private val _actionState = MutableStateFlow<String>("")
+    val actionState: StateFlow<String> = _actionState
+
+    fun clearActionState() {
+        _actionState.value = ""
+    }
+
+    fun triggerGithubAction(token: String, workflowId: String) {
+        if (token.isBlank()) {
+            _actionState.value = "Errore: GitHub Token mancante"
+            return
+        }
+        
+        _actionState.value = "Avvio $workflowId in corso..."
+        
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val url = URL("https://api.github.com/repos/darietto17/LiveTvPremium/actions/workflows/$workflowId/dispatches")
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "POST"
+                connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
+                connection.setRequestProperty("Authorization", "Bearer $token")
+                connection.setRequestProperty("X-GitHub-Api-Version", "2022-11-28")
+                connection.doOutput = true
+                
+                val body = "{\"ref\":\"master\"}"
+                connection.outputStream.use { os ->
+                    val input = body.toByteArray(Charsets.UTF_8)
+                    os.write(input, 0, input.size)
+                }
+                
+                val responseCode = connection.responseCode
+                if (responseCode == HttpURLConnection.HTTP_NO_CONTENT || responseCode == HttpURLConnection.HTTP_OK) {
+                    _actionState.value = "✅ Script $workflowId avviato con successo!"
+                } else {
+                    val errorMsg = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "Unknown error"
+                    _actionState.value = "❌ Errore $responseCode: $errorMsg"
+                }
+            } catch (e: Exception) {
+                _actionState.value = "❌ Errore di rete: ${e.message}"
+            }
+        }
+    }
     private suspend fun fetchOrderedCategories(token: String?, context: android.content.Context): List<String> {
         return withContext(Dispatchers.IO) {
             try {

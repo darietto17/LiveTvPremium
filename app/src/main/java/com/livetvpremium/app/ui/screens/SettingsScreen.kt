@@ -8,12 +8,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
 import com.livetvpremium.app.ui.viewmodel.SettingsViewModel
+import com.livetvpremium.app.ui.viewmodel.MainViewModel
+import com.livetvpremium.app.ui.viewmodel.SyncState
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
+    mainViewModel: MainViewModel,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -21,6 +30,10 @@ fun SettingsScreen(
     val tmdbApiKey by viewModel.tmdbApiKey.collectAsState()
     val useVlcPlayer by viewModel.useVlcPlayer.collectAsState()
     val proxyUrl by viewModel.proxyUrl.collectAsState()
+    
+    val syncState by mainViewModel.syncState.collectAsState()
+    val actionState by mainViewModel.actionState.collectAsState()
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -38,61 +51,132 @@ fun SettingsScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Column(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            OutlinedTextField(
-                value = githubToken,
-                onValueChange = { viewModel.saveGithubToken(it) },
-                label = { Text("GitHub Token") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-            
-            OutlinedTextField(
-                value = tmdbApiKey,
-                onValueChange = { viewModel.saveTmdbApiKey(it) },
-                label = { Text("TMDB API Key") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-            
-            OutlinedTextField(
-                value = proxyUrl,
-                onValueChange = { viewModel.saveProxyUrl(it) },
-                label = { Text("Proxy URL") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("Usa VLC Player come predefinito", color = MaterialTheme.colorScheme.onBackground)
-                Switch(
-                    checked = useVlcPlayer,
-                    onCheckedChange = { viewModel.saveUseVlcPlayer(it) }
+                Text("API e Configurazioni", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                
+                OutlinedTextField(
+                    value = githubToken,
+                    onValueChange = { viewModel.saveGithubToken(it) },
+                    label = { Text("GitHub Token") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
                 )
+                
+                OutlinedTextField(
+                    value = tmdbApiKey,
+                    onValueChange = { viewModel.saveTmdbApiKey(it) },
+                    label = { Text("TMDB API Key") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                
+                OutlinedTextField(
+                    value = proxyUrl,
+                    onValueChange = { viewModel.saveProxyUrl(it) },
+                    label = { Text("Proxy URL") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Usa VLC Player come predefinito", color = MaterialTheme.colorScheme.onBackground)
+                    Switch(
+                        checked = useVlcPlayer,
+                        onCheckedChange = { viewModel.saveUseVlcPlayer(it) }
+                    )
+                }
+                
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                
+                Text("Gestione Dati Locali", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                
+                Button(
+                    onClick = {
+                        mainViewModel.syncAll(githubToken, 0L, forceSync = true, context = context)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("Forza Ricaricamento Liste ORA")
+                }
+                
+                when (val state = syncState) {
+                    is SyncState.Loading -> {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text(state.message, style = MaterialTheme.typography.bodyMedium)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            LinearProgressIndicator(
+                                progress = { state.progress },
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+                    is SyncState.Success -> {
+                        Text("✅ Sincronizzazione locale completata!", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                    }
+                    is SyncState.Error -> {
+                        Text("❌ Errore durante il sync: ${state.exception.message}", color = MaterialTheme.colorScheme.error)
+                    }
+                    else -> {}
+                }
+                
+                if (githubToken.isNotBlank()) {
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    
+                    Text("Scraper (Richiede GitHub Token)", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                    Text("Attenzione: usa questi comandi solo se vi sono stati cambiamenti evidenti ai cataloghi originari. Generare nuove liste richiede diversi minuti al server.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Button(
+                            onClick = { mainViewModel.triggerGithubAction(githubToken, "main.yml") },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer, contentColor = MaterialTheme.colorScheme.onErrorContainer)
+                        ) {
+                            Text("Genera Canali Live")
+                        }
+                        Button(
+                            onClick = { mainViewModel.triggerGithubAction(githubToken, "fs.yml") },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer, contentColor = MaterialTheme.colorScheme.onErrorContainer)
+                        ) {
+                            Text("Genera Film & Serie")
+                        }
+                    }
+                    
+                    if (actionState.isNotBlank()) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(actionState, modifier = Modifier.weight(1f), fontSize = 14.sp)
+                                IconButton(onClick = { mainViewModel.clearActionState() }) {
+                                    Icon(Icons.Default.Clear, contentDescription = "Clear")
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(32.dp))
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Button(
-                onClick = {
-                    viewModel.saveLastSyncTime(0L) // Force expiration
-                    onNavigateBack() // Go back to Home
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Text("Forza Sincronizzazione Ora")
-            }
-        }
     }
 }
