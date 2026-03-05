@@ -33,6 +33,11 @@ jobs:
         run: |
           python scripts/lista.py
       
+      - name: Gzip list and EPG
+        run: |
+          gzip -c lista.m3u > lista.m3u.gz
+          if [ -f epg.xml ]; then gzip -c epg.xml > epg.xml.gz; fi
+
       - name: Pull latest changes
         run: |
           git config pull.rebase false
@@ -41,6 +46,7 @@ jobs:
       - name: Commit and push changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "📊 Update list - ${{ github.run_number }}"
+          commit_message: "📊 Update list (compressed) - ${{ github.run_number }}"
+          file_pattern: "lista.m3u lista.m3u.gz epg.xml epg.xml.gz"
           commit_user_name: "github-actions[bot]"
           commit_user_email: "41898282+github-actions[bot]@users.noreply.github.com"

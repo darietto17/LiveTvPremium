@@ -239,8 +239,8 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
                 // Async EPG
                 launch {
                     try {
-                        val epgFile = getPlaylistFile("epg.xml", isCacheValid, null, context,
-                            customUrl = "https://raw.githubusercontent.com/darietto17/TV/refs/heads/main/epg.xml")
+                        val epgFile = getPlaylistFile("epg.xml", isCacheValid, "", context,
+                            customUrl = "https://raw.githubusercontent.com/darietto17/TV/refs/heads/main/epg.xml.gz")
                         if (epgFile != null && epgFile.exists() && epgFile.length() > 0) {
                             val parsed = epgFile.inputStream().use { epgParser.parse(it) }
                             _epgData.value = parsed

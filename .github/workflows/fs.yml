@@ -49,11 +49,23 @@ jobs:
         echo "📺 Running scripts/serie.py..."
         python scripts/serie.py
 
+    - name: Generate optimized JSON Data
+      run: |
+        echo "📂 Running scripts/generator_json.py..."
+        python scripts/generator_json.py
+
+    - name: Gzip playlists and cache
+      run: |
+        gzip -c film.m3u > film.m3u.gz
+        gzip -c serie.m3u > serie.m3u.gz
+        gzip -c scripts/film_cache.json > scripts/film_cache.json.gz
+        gzip -c scripts/serie_cache.json > scripts/serie_cache.json.gz
+
     - name: Commit and push changes
       uses: stefanzweifel/git-auto-commit-action@v5
       with:
-        commit_message: "🎬 Update playlists - ${{ github.run_number }}"
-        file_pattern: "film.m3u serie.m3u scripts/film_cache.json scripts/serie_cache.json"
+        commit_message: "🎬 Update playlists (compressed) - ${{ github.run_number }}"
+        file_pattern: "film.m3u serie.m3u film.m3u.gz serie.m3u.gz app_data.json app_data.json.gz scripts/film_cache.json scripts/serie_cache.json scripts/film_cache.json.gz scripts/serie_cache.json.gz"
         commit_user_name: "github-actions[bot]"
         commit_user_email: "41898282+github-actions[bot]@users.noreply.github.com"
 
