@@ -67,6 +67,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
+        
+        // Skip PiP if a download is in progress (Phase 32)
+        val progress = mainViewModel.downloadProgress.value
+        if (progress > 0f && progress < 1f) {
+            return
+        }
+
         // Support for Picture-in-Picture
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val aspectRatio = Rational(16, 9)

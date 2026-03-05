@@ -111,8 +111,12 @@ fun PlayerScreen(
             val finalUrl = remember(url, proxyUrl) {
                 if (proxyUrl.isNotBlank()) {
                     val base = if (proxyUrl.endsWith("/")) proxyUrl else "$proxyUrl/"
-                    val encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8.toString())
-                    "${base}manifest.m3u8?url=$encodedUrl"
+                    try {
+                        val encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8.toString())
+                        "${base}manifest.m3u8?url=$encodedUrl"
+                    } catch (e: Exception) {
+                        url
+                    }
                 } else {
                     url
                 }
@@ -222,7 +226,8 @@ fun PlayerScreen(
                         DefaultTsPayloadReaderFactory.FLAG_ALLOW_NON_IDR_KEYFRAMES or
                         DefaultTsPayloadReaderFactory.FLAG_DETECT_ACCESS_UNITS or
                         DefaultTsPayloadReaderFactory.FLAG_IGNORE_SPLICE_INFO_STREAM or
-                        DefaultTsPayloadReaderFactory.FLAG_ENABLE_HDMV_DTS_AUDIO_STREAMS
+                        DefaultTsPayloadReaderFactory.FLAG_ENABLE_HDMV_DTS_AUDIO_STREAMS or
+                        DefaultTsPayloadReaderFactory.FLAG_IGNORE_PCR
                     )
                     .setAdtsExtractorFlags(androidx.media3.extractor.ts.AdtsExtractor.FLAG_ENABLE_CONSTANT_BITRATE_SEEKING)
                     
@@ -263,7 +268,8 @@ fun PlayerScreen(
                                     lowerUrl.contains("output=hls") || lowerUrl.contains("protocol=hls")
                         val isTs = lowerUrl.contains(".ts") || lowerUrl.contains("ts") || 
                                    lowerUrl.contains("type=ts") || lowerUrl.contains("output=ts") || 
-                                   lowerUrl.contains("output=mpegts") || lowerUrl.contains("mpegts")
+                                   lowerUrl.contains("output=mpegts") || lowerUrl.contains("mpegts") ||
+                                   (isLive && lowerUrl.contains("/ts"))
                         val isMp4 = lowerUrl.contains(".mp4") || lowerUrl.contains("type=mp4") || lowerUrl.contains("output=mp4")
                         val isMkv = lowerUrl.contains(".mkv") || lowerUrl.contains("type=mkv") || lowerUrl.contains("output=mkv")
                         
@@ -273,7 +279,7 @@ fun PlayerScreen(
                             isMp4 -> mediaItemBuilder.setMimeType(MimeTypes.VIDEO_MP4)
                             isMkv -> mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_MATROSKA)
                             isLive -> {
-                                // For live, prefer HLS unless TS is explicitly mentioned in a clear way
+                                // Default for Live channels if no clear format, prefer HLS
                                 if (lowerUrl.contains("output=ts") || lowerUrl.contains("type=ts") || lowerUrl.endsWith(".ts")) {
                                     mediaItemBuilder.setMimeType(MimeTypes.VIDEO_MP2T)
                                 } else {
@@ -281,7 +287,7 @@ fun PlayerScreen(
                                 }
                             }
                             else -> {
-                                // For VOD without extension, let ExoPlayer sniff but we've improved TS flags above
+                                // For VOD let it sniff
                             }
                         }
  

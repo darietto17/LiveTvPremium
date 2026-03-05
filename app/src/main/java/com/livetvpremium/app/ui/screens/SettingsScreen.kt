@@ -172,6 +172,8 @@ fun SettingsScreen(
                     }
                 }
 
+                val downloadProgress by mainViewModel.downloadProgress.collectAsState()
+
                 latestRelease?.let { release ->
                     Card(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
@@ -181,15 +183,34 @@ fun SettingsScreen(
                             Text("Nuova versione disponibile: ${release.tagName}", fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(release.body, fontSize = 12.sp, maxLines = 5, overflow = TextOverflow.Ellipsis)
+                            
+                            if (downloadProgress > 0f && downloadProgress < 1f) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                LinearProgressIndicator(
+                                    progress = { downloadProgress },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Download: ${(downloadProgress * 100).toInt()}%",
+                                    fontSize = 10.sp,
+                                    modifier = Modifier.align(Alignment.End)
+                                )
+                            }
+
                             Spacer(modifier = Modifier.height(8.dp))
                             Button(
                                 onClick = { 
                                     val apkAsset = release.assets.find { it.name.endsWith(".apk") } ?: release.assets.firstOrNull()
                                     apkAsset?.let { mainViewModel.downloadAndInstallUpdate(context, it.downloadUrl) }
                                 },
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = downloadProgress == 0f || downloadProgress >= 1f
                             ) {
-                                Text("Scarica e Installa ${release.tagName}")
+                                val buttonText = if (downloadProgress > 0f && downloadProgress < 1f) "Scaricamento..." else "Scarica e Installa ${release.tagName}"
+                                Text(buttonText)
                             }
                         }
                     }

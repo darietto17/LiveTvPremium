@@ -437,23 +437,47 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
         return l.size > c.size
     }
 
+    private val _downloadProgress = MutableStateFlow(0f)
+    val downloadProgress: StateFlow<Float> = _downloadProgress
+
     fun downloadAndInstallUpdate(context: android.content.Context, downloadUrl: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            _actionState.value = "Download aggiornamento in corso..."
+            _actionState.value = "Inizializzazione download..."
+            _downloadProgress.value = 0f
             try {
                 val file = java.io.File(context.getExternalFilesDir(null), "update.apk")
                 val url = URL(downloadUrl)
                 val connection = url.openConnection() as HttpsURLConnection
                 connection.connectTimeout = 30000
                 connection.readTimeout = 30000
+                
+                val fileSize = connection.contentLength
+                val fileSizeMb = if (fileSize > 0) String.format("%.1f", fileSize / (1024f * 1024f)) else "N/A"
 
                 connection.inputStream.use { input ->
                     file.outputStream().use { output ->
-                        input.copyTo(output)
+                        val buffer = ByteArray(8192)
+                        var bytesRead: Int
+                        var totalBytesRead = 0L
+                        
+                        while (input.read(buffer).also { bytesRead = it } != -1) {
+                            output.write(buffer, 0, bytesRead)
+                            totalBytesRead += bytesRead
+                            if (fileSize > 0) {
+                                val progress = totalBytesRead.toFloat() / fileSize
+                                _downloadProgress.value = progress
+                                val currentMb = String.format("%.1f", totalBytesRead / (1024f * 1024f))
+                                _actionState.value = "Scaricamento: $currentMb / $fileSizeMb MB"
+                            } else {
+                                val currentMb = String.format("%.1f", totalBytesRead / (1024f * 1024f))
+                                _actionState.value = "Scaricati $currentMb MB..."
+                            }
+                        }
                     }
                 }
 
-                _actionState.value = "Avvio installazione..."
+                _actionState.value = "✅ Download completato. Avvio installazione..."
+                _downloadProgress.value = 1f
                 
                 val uri = FileProvider.getUriForFile(
                     context,
