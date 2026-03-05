@@ -2,13 +2,14 @@
 
 LiveTvPremium è un ecosistema completo per lo streaming IPTV premium, progettato nativamente per Android (Mobile & TV) e affiancato da un potente motore Python per la generazione e la classificazione dinamica delle liste M3U.
 
-## 🚀 Novità Release v1.1.1 (Hotfix)
+## 🚀 Novità Release v1.1.3 (Stability & DNS)
 
-- **Stop allo Standby (Wake Lock)**: Implementato `FLAG_KEEP_SCREEN_ON` per impedire al televisore di spegnersi durante la visione di lunghi contenuti.
-- **Vero Full Screen (Immersive Mode)**: Il player entra ora automaticamente in modalità immersiva nascondendo le barre di sistema.
-- **Fix Navigazione TV**: Migliorata la gestione del focus D-PAD per muoversi agevolmente tra i contenuti e le sezioni dell'app senza "blocchi".
-- **Guida TV (EPG) Ottimizzata**: Integrazione completa della guida programmi con un parser ad alte prestazioni che filtra i dati in tempo reale per minimizzare l'uso della RAM.
-- **Hls Fallback**: Maggiore compatibilità con gli stream VOD (Film/Serie) tramite riconoscimento intelligente dei flussi HLS anche senza estensione esplicita.
+- **DNS-over-HTTPS (DoH)**: Integrazione nativa per cambiare i DNS (es. Cloudflare 1.1.1.1 o Google 8.8.8.8) direttamente nelle impostazioni per bypassare blocchi ISP senza configurazioni di sistema.
+- **Universal Proxy Support**: Il Proxy URL ora viene applicato correttamente a tutti i tipi di contenuto (Live, Film, Serie TV).
+- **Stabilità Live (Phase 30)**: Aumento del buffer iniziale a 15 secondi per i flussi Live e ottimizzazione dei timeout di rete (30s) per eliminare i blocchi continui.
+- **TV Remote Avanzato**: Gestione intelligente del tasto BACK (nasconde i controlli prima di uscire) e ottimizzazione del focus D-PAD.
+- **Update System**: Sezione aggiornamenti sempre visibile nelle impostazioni per un facile download delle nuove release APK.
+- **Bug Fix Serie TV**: Risolto il problema di riproduzione ("Source error") su flussi VOD tramite proxy.
 
 ## 🛠️ Architettura del Progetto
 
