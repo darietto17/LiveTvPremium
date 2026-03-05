@@ -215,22 +215,23 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
                 _serieItems.value = parsedSerie
                 serieGroups.value = parsedSerie.map { it.groupTitle }.distinct().sorted()
 
-                // EPG
-                _syncState.value = SyncState.Loading(0.95f, "Caricamento Guida TV (EPG)...")
-                try {
-                    val epgFile = getPlaylistFile("epg.xml", isCacheValid, null, context,
-                        customUrl = "https://raw.githubusercontent.com/darietto17/TV/refs/heads/main/epg.xml")
-                    if (epgFile != null && epgFile.exists() && epgFile.length() > 0) {
-                        val parsed = epgFile.inputStream().use { epgParser.parse(it) }
-                        _epgData.value = parsed
-                    }
-                } catch (e: Exception) {
-                    // EPG failure is non-fatal, just log
-                    e.printStackTrace()
-                }
+                // Mark success immediately - EPG loads in background
+                _syncState.value = SyncState.Success(parsedLive + parsedFilm + parsedSerie)
 
-                // Mark success
-                _syncState.value = SyncState.Success(parsedLive + parsedFilm + parsedSerie) // Returning all just to satisfy the old Success signature, will refactor UI later.
+                // Load EPG asynchronously in the background (non-blocking)
+                launch {
+                    try {
+                        val epgFile = getPlaylistFile("epg.xml", isCacheValid, null, context,
+                            customUrl = "https://raw.githubusercontent.com/darietto17/TV/refs/heads/main/epg.xml")
+                        if (epgFile != null && epgFile.exists() && epgFile.length() > 0) {
+                            val parsed = epgFile.inputStream().use { epgParser.parse(it) }
+                            _epgData.value = parsed
+                        }
+                    } catch (e: Exception) {
+                        // EPG failure is non-fatal
+                        e.printStackTrace()
+                    }
+                } // Returning all just to satisfy the old Success signature, will refactor UI later.
             } catch (e: Exception) {
                 _syncState.value = SyncState.Error(e)
             }

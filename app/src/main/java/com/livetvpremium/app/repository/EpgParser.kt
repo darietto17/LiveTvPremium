@@ -16,8 +16,17 @@ class EpgParser {
         timeZone = TimeZone.getTimeZone("UTC")
     }
 
-    suspend fun parse(inputStream: InputStream): Map<String, List<EpgProgram>> = withContext(Dispatchers.Default) {
+    /**
+     * Parses an XMLTV stream keeping only programmes within a relevant time window
+     * (from 1 hour ago to 24 hours ahead) to minimize memory usage.
+     * Descriptions are truncated to save memory.
+     */
+    suspend fun parse(inputStream: InputStream): Map<String, List<EpgProgram>> = withContext(Dispatchers.IO) {
         val programs = mutableMapOf<String, MutableList<EpgProgram>>()
+
+        val now = System.currentTimeMillis()
+        val windowStart = now - 1 * 60 * 60 * 1000L      // 1 hour ago
+        val windowEnd   = now + 24 * 60 * 60 * 1000L      // 24 hours ahead
 
         val factory = XmlPullParserFactory.newInstance()
         factory.isNamespaceAware = false
@@ -30,8 +39,8 @@ class EpgParser {
         var currentStop = 0L
         var currentTitle = ""
         var currentSubtitle = ""
-        var currentDesc = ""
         var inProgramme = false
+        var skipProgramme = false  // skip programmes outside window
         var currentTag = ""
 
         while (eventType != XmlPullParser.END_DOCUMENT) {
@@ -45,37 +54,41 @@ class EpgParser {
                         val stopStr = parser.getAttributeValue(null, "stop") ?: ""
                         currentStart = parseDate(startStr)
                         currentStop = parseDate(stopStr)
+
+                        // Skip programmes completely outside the time window
+                        skipProgramme = currentStop < windowStart || currentStart > windowEnd
+
                         currentTitle = ""
                         currentSubtitle = ""
-                        currentDesc = ""
-                    } else if (inProgramme) {
+                    } else if (inProgramme && !skipProgramme) {
                         currentTag = tagName
                     }
                 }
                 XmlPullParser.TEXT -> {
-                    if (inProgramme) {
+                    if (inProgramme && !skipProgramme) {
                         val text = parser.text?.trim() ?: ""
                         when (currentTag) {
                             "title" -> currentTitle = text
                             "sub-title" -> currentSubtitle = text
-                            "desc" -> currentDesc = text
+                            // Skip desc - not displayed in UI, saves a lot of memory
                         }
                     }
                 }
                 XmlPullParser.END_TAG -> {
                     if (parser.name == "programme" && inProgramme) {
-                        inProgramme = false
-                        if (currentChannelId.isNotEmpty() && currentTitle.isNotEmpty()) {
+                        if (!skipProgramme && currentChannelId.isNotEmpty() && currentTitle.isNotEmpty()) {
                             val program = EpgProgram(
                                 channelId = currentChannelId,
                                 title = currentTitle,
                                 subtitle = currentSubtitle,
-                                description = currentDesc,
+                                description = "", // Skip to save memory
                                 startTime = currentStart,
                                 stopTime = currentStop
                             )
                             programs.getOrPut(currentChannelId) { mutableListOf() }.add(program)
                         }
+                        inProgramme = false
+                        skipProgramme = false
                         currentTag = ""
                     } else if (inProgramme) {
                         currentTag = ""
@@ -91,7 +104,6 @@ class EpgParser {
 
     private fun parseDate(dateStr: String): Long {
         return try {
-            // Format: "20260306070300 +0000"
             dateFormat.parse(dateStr)?.time ?: 0L
         } catch (e: Exception) {
             0L
