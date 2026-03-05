@@ -1,1 +1,64 @@
 #EXTM3U
+#EXTINF:-1 tvg-name="DADDYLIVE" group-title="Eventi Live DLHD",DADDYLIVE
+https://example.com.m3u8
+
+#EXTINF:-1 tvg-id="italyserieclatinavssorrento" tvg-name="Soccer | Italy - Serie C : Latina vs Sorrento (19:00)" tvg-logo="https://raw.githubusercontent.com/darietto17/TV/main/logos/Latina_vs_Sorrento.png" group-title="Eventi Live DLHD",Soccer | Italy - Serie C : Latina vs Sorrento (19:00)
+https://dlhd.dad/watch.php?id=1
+
+#EXTINF:-1 tvg-id="italyseriecvirtuscasaranovssiracusa" tvg-name="Soccer | Italy - Serie C : Virtus Casarano vs Siracusa (19:00)" tvg-logo="https://www.garabatos.biz/wp-content/uploads/2020/06/marina-cafe-siracusa-logo.png" group-title="Eventi Live DLHD",Soccer | Italy - Serie C : Virtus Casarano vs Siracusa (19:00)
+https://dlhd.dad/watch.php?id=4
+
+#EXTINF:-1 tvg-id="italyseriecpicernovsatalantaii" tvg-name="Soccer | Italy - Serie C : Picerno vs Atalanta II (19:00)" tvg-logo="https://raw.githubusercontent.com/darietto17/TV/main/logos/Picerno_vs_Atalanta II.png" group-title="Eventi Live DLHD",Soccer | Italy - Serie C : Picerno vs Atalanta II (19:00)
+https://dlhd.dad/watch.php?id=5
+
+#EXTINF:-1 tvg-id="italyseriecpicernovsatalantaii" tvg-name="Soccer | Italy - Serie C : Picerno vs Atalanta II (19:00)" tvg-logo="https://raw.githubusercontent.com/darietto17/TV/main/logos/Picerno_vs_Atalanta II.png" group-title="Eventi Live DLHD",Soccer | Italy - Serie C : Picerno vs Atalanta II (19:00)
+https://dlhd.dad/watch.php?id=461
+
+#EXTINF:-1 tvg-id="italyseriecgiuglianovsmonopoli" tvg-name="Soccer | Italy - Serie C : Giugliano vs Monopoli (19:00)" tvg-logo="https://raw.githubusercontent.com/darietto17/TV/main/logos/Giugliano_vs_Monopoli.png" group-title="Eventi Live DLHD",Soccer | Italy - Serie C : Giugliano vs Monopoli (19:00)
+https://dlhd.dad/watch.php?id=6
+
+#EXTINF:-1 tvg-id="italyseriecgiuglianovsmonopoli" tvg-name="Soccer | Italy - Serie C : Giugliano vs Monopoli (19:00)" tvg-logo="https://raw.githubusercontent.com/darietto17/TV/main/logos/Giugliano_vs_Monopoli.png" group-title="Eventi Live DLHD",Soccer | Italy - Serie C : Giugliano vs Monopoli (19:00)
+https://dlhd.dad/watch.php?id=870
+
+#EXTINF:-1 tvg-id="italyseriecaudacecerignolavstrapani1905" tvg-name="Soccer | Italy - Serie C : Audace Cerignola vs Trapani 1905 (21:30)" tvg-logo="https://raw.githubusercontent.com/darietto17/TV/main/logos/Audace Cerignola_vs_Trapani 1905.png" group-title="Eventi Live DLHD",Soccer | Italy - Serie C : Audace Cerignola vs Trapani 1905 (21:30)
+https://dlhd.dad/watch.php?id=9
+
+#EXTINF:-1 tvg-id="italyseriecbeneventovscatania" tvg-name="Soccer | Italy - Serie C : Benevento vs Catania (21:30)" tvg-logo="https://raw.githubusercontent.com/darietto17/TV/main/logos/Benevento_vs_Catania.png" group-title="Eventi Live DLHD",Soccer | Italy - Serie C : Benevento vs Catania (21:30)
+https://dlhd.dad/watch.php?id=5
+
+#EXTINF:-1 tvg-id="italyseriecbeneventovscatania" tvg-name="Soccer | Italy - Serie C : Benevento vs Catania (21:30)" tvg-logo="https://raw.githubusercontent.com/darietto17/TV/main/logos/Benevento_vs_Catania.png" group-title="Eventi Live DLHD",Soccer | Italy - Serie C : Benevento vs Catania (21:30)
+https://dlhd.dad/watch.php?id=870
+
+#EXTINF:-1 tvg-id="italyseriecpotenzacalciovscosenza" tvg-name="Soccer | Italy - Serie C : Potenza Calcio vs Cosenza (21:30)" tvg-logo="https://raw.githubusercontent.com/darietto17/TV/main/logos/Potenza Calcio_vs_Cosenza.png" group-title="Eventi Live DLHD",Soccer | Italy - Serie C : Potenza Calcio vs Cosenza (21:30)
+https://dlhd.dad/watch.php?id=1
+
+#EXTINF:-1 tvg-id="italyserieccasertanavssalernitana" tvg-name="Soccer | Italy - Serie C : Casertana vs Salernitana (21:30)" tvg-logo="http://eshop.salernitana.it/images/home/keychain-logo2.png" group-title="Eventi Live DLHD",Soccer | Italy - Serie C : Casertana vs Salernitana (21:30)
+https://dlhd.dad/watch.php?id=6
+
+#EXTINF:-1 tvg-id="italyserieccrotonevscavese" tvg-name="Soccer | Italy - Serie C : Crotone vs Cavese (21:30)" tvg-logo="https://brandlogovector.com/wp-content/uploads/2022/03/FC-Crotone-Logo-Small-120x120.png" group-title="Eventi Live DLHD",Soccer | Italy - Serie C : Crotone vs Cavese (21:30)
+https://dlhd.dad/watch.php?id=4
+
+#EXTINF:-1 tvg-id="italyseriecteamaltamuravsfoggia" tvg-name="Soccer | Italy - Serie C : Team Altamura vs Foggia (21:30)" tvg-logo="https://raw.githubusercontent.com/darietto17/TV/main/logos/Team Altamura_vs_Foggia.png" group-title="Eventi Live DLHD",Soccer | Italy - Serie C : Team Altamura vs Foggia (21:30)
+https://dlhd.dad/watch.php?id=10
+
+#EXTINF:-1 tvg-id="2026bnpparibasopentennisatpwtafirstround" tvg-name="Tennis | 2026 BNP Paribas Open Tennis ATP/WTA First Round (05:00)" tvg-logo="https://assets.stickpng.com/images/626658201e92f9aac65b5bb4.png" group-title="Eventi Live DLHD",Tennis | 2026 BNP Paribas Open Tennis ATP/WTA First Round (05:00)
+https://dlhd.dad/watch.php?id=576
+
+#EXTINF:-1 tvg-id="formula2qatarairwaysaustraliangppractice1" tvg-name="Motorsport | Formula 2 : Qatar Airways Australian GP - Practice 1 (01:00)" tvg-logo="https://143025518.cdn6.editmysite.com/uploads/1/4/3/0/143025518/s575460209305073383_p5545_i2_w800.png" group-title="Eventi Live DLHD",Motorsport | Formula 2 : Qatar Airways Australian GP - Practice 1 (01:00)
+https://dlhd.dad/watch.php?id=577
+
+#EXTINF:-1 tvg-id="formula1qatarairwaysaustraliangppractice1" tvg-name="Motorsport | Formula 1 : Qatar Airways Australian GP - Practice 1 (03:30)" tvg-logo="https://www.dtti.it/wp-content/uploads/2022/07/formula-1-logo-0.png" group-title="Eventi Live DLHD",Motorsport | Formula 1 : Qatar Airways Australian GP - Practice 1 (03:30)
+https://dlhd.dad/watch.php?id=577
+
+#EXTINF:-1 tvg-id="formula3qatarairwaysaustraliangpqualifying" tvg-name="Motorsport | Formula 3 : Qatar Airways Australian GP - Qualifying (05:00)" tvg-logo="https://logospng.org/download/formula-1/formula-1-2048.png" group-title="Eventi Live DLHD",Motorsport | Formula 3 : Qatar Airways Australian GP - Qualifying (05:00)
+https://dlhd.dad/watch.php?id=577
+
+#EXTINF:-1 tvg-id="europeanchampionshipwomenbosniaampherzegovinawvsitalyw" tvg-name="Handball | European Championship Women : Bosnia &amp; Herzegovina W vs Italy W (21:00)" tvg-logo="https://raw.githubusercontent.com/darietto17/TV/main/logos/Bosnia &amp; Herzegovina W_vs_Italy W.png" group-title="Eventi Live DLHD",Handball | European Championship Women : Bosnia &amp; Herzegovina W vs Italy W (21:00)
+https://dlhd.dad/watch.php?id=460
+
+#EXTINF:-1 tvg-id="lahtiwomenshs130worldcupday1" tvg-name="Ski Jumping | Lahti | Women's HS 130 World Cup | Day 1 (16:00)" tvg-logo="https://www.lahtilottery.com/img/logo.png" group-title="Eventi Live DLHD",Ski Jumping | Lahti | Women's HS 130 World Cup | Day 1 (16:00)
+https://dlhd.dad/watch.php?id=878
+
+#EXTINF:-1 tvg-id="europeanchampionshipsshahdagmixedrelay" tvg-name="Winter Sports | European Championships Shahdag | Mixed Relay (12:00)" tvg-logo="https://comitati.fisi.org/alpi-centrali/wp-content/uploads/sites/25/2024/08/Logo_ParcoStelvio_Biathlon.png" group-title="Eventi Live DLHD",Winter Sports | European Championships Shahdag | Mixed Relay (12:00)
+https://dlhd.dad/watch.php?id=878
+
