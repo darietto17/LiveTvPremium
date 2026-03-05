@@ -68,9 +68,9 @@ class MainActivity : ComponentActivity() {
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
         
-        // Skip PiP if a download is in progress (Phase 32)
+        // Skip PiP if a download is in progress or just finished (Phase 32)
         val progress = mainViewModel.downloadProgress.value
-        if (progress > 0f && progress < 1f) {
+        if (progress > 0f) {
             return
         }
 

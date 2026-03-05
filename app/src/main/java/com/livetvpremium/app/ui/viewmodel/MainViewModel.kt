@@ -525,8 +525,13 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
                 }
                 context.startActivity(intent)
                 
+                // Reset progress after a delay so PiP is re-enabled for future use
+                kotlinx.coroutines.delay(5000)
+                _downloadProgress.value = 0f
+                
             } catch (e: Exception) {
                 _actionState.value = "Errore download: ${e.message}"
+                _downloadProgress.value = 0f
             }
         }
     }
