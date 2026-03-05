@@ -261,6 +261,7 @@ fun PlayerScreen(
                 .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
                 .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
                 .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .connectionPool(okhttp3.ConnectionPool(10, 5, java.util.concurrent.TimeUnit.MINUTES))
                 .followRedirects(true)
                 .followSslRedirects(true)
                 .retryOnConnectionFailure(true)
@@ -278,7 +279,9 @@ fun PlayerScreen(
                         DefaultTsPayloadReaderFactory.FLAG_ALLOW_NON_IDR_KEYFRAMES or
                         DefaultTsPayloadReaderFactory.FLAG_DETECT_ACCESS_UNITS or
                         DefaultTsPayloadReaderFactory.FLAG_IGNORE_SPLICE_INFO_STREAM or
-                        DefaultTsPayloadReaderFactory.FLAG_ENABLE_HDMV_DTS_AUDIO_STREAMS
+                        DefaultTsPayloadReaderFactory.FLAG_ENABLE_HDMV_DTS_AUDIO_STREAMS or
+                        (1 shl 6) or // FLAG_IGNORE_PCR in some versions
+                        (1 shl 3)    // FLAG_ALLOW_NON_CONSECUTIVE_PIDS in some versions
                     )
                     .setAdtsExtractorFlags(androidx.media3.extractor.ts.AdtsExtractor.FLAG_ENABLE_CONSTANT_BITRATE_SEEKING)
                     
@@ -311,6 +314,21 @@ fun PlayerScreen(
                     .setLoadControl(loadControl)
                     .build()
                     .apply {
+                        addListener(object : androidx.media3.common.Player.Listener {
+                            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                                // Auto-retry on network or timeout errors
+                                if (error.errorCode == androidx.media3.common.PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ||
+                                    error.errorCode == androidx.media3.common.PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT ||
+                                    error.errorCode == androidx.media3.common.PlaybackException.ERROR_CODE_IO_UNSPECIFIED
+                                ) {
+                                    val currentPos = currentPosition
+                                    prepare()
+                                    seekTo(currentPos)
+                                    play()
+                                }
+                            }
+                        })
+                        
                         val mediaItemBuilder = MediaItem.Builder().setUri(Uri.parse(finalUrl))
                         
                         // Improved MIME type detection for IPTV streams
