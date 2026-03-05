@@ -152,14 +152,9 @@ fun PlayerScreen(
                         } else if (url.contains(".mkv", ignoreCase = true)) {
                             mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_MATROSKA)
                         } else {
-                            // Se non c'è un'estensione chiara nell'URL:
-                            // - Se è una serie/film (VOD), proviamo col fallback MP4 (molto comune per i server proxy VOD)
-                            // - Se è Live/TV, proviamo col fallback M3U8
-                            if (isVod) {
-                                mediaItemBuilder.setMimeType(MimeTypes.VIDEO_MP4)
-                            } else {
-                                mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
-                            }
+                            // Se non c'è un'estensione chiara nell'URL, prova sempre M3U8 come fallback
+                            // La maggior parte dei server proxy VOD e live servono HLS
+                            mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
                         }
 
                         setMediaItem(mediaItemBuilder.build())
