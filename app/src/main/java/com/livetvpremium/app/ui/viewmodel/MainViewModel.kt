@@ -300,29 +300,71 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
                 return@withContext file
             }
             
-            // Need to download
-            val url = customUrl ?: "https://raw.githubusercontent.com/darietto17/LiveTvPremium/refs/heads/master/$filename"
-            val connection = URL(url).openConnection() as HttpsURLConnection
-            connection.connectTimeout = 30000
-            connection.readTimeout = 30000
+            // Try download with fallback logic
+            var downloaded = downloadUrlToFile(customUrl ?: "https://raw.githubusercontent.com/darietto17/LiveTvPremium/refs/heads/master/$filename", file, token)
+            
+            // Fallback: If customUrl was a .gz and failed, try the uncompressed version
+            if (!downloaded && customUrl != null && customUrl.endsWith(".gz")) {
+                val fallbackUrl = customUrl.removeSuffix(".gz")
+                downloaded = downloadUrlToFile(fallbackUrl, file, token)
+            }
+            
+            // Final Fallback: If still not downloaded and it's a known list, try the default uncompressed repo URL
+            if (!downloaded && customUrl != null) {
+                val defaultFallback = "https://raw.githubusercontent.com/darietto17/LiveTvPremium/refs/heads/master/$filename"
+                downloaded = downloadUrlToFile(defaultFallback, file, token)
+            }
+            
+            if (downloaded) file else null
+        }
+    }
+
+    private fun downloadUrlToFile(urlString: String, file: java.io.File, token: String?): Boolean {
+        return try {
+            val url = URL(urlString)
+            val connection = url.openConnection() as HttpsURLConnection
+            connection.connectTimeout = 15000
+            connection.readTimeout = 15000
+            
+            // Set User-Agent to avoid blocks
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            
+            // Disable transparent decompression so we get raw Gzip if it's a .gz file
+            // Android's HttpURLConnection automatically decompresses if it sees Content-Encoding: gzip 
+            // but for .gz files we want the binary as-is or we want to control it.
+            connection.setRequestProperty("Accept-Encoding", "identity")
             
             if (!token.isNullOrEmpty()) {
                 connection.setRequestProperty("Authorization", "token $token")
             }
             
-            if (connection.responseCode == 404) {
-               return@withContext null // File might not exist yet on repo
+            val responseCode = connection.responseCode
+            if (responseCode == 401 || responseCode == 403) {
+                // Token might be invalid, try without it for public repos
+                return downloadUrlToFile(urlString, file, null)
+            }
+            if (responseCode != 200) {
+                return false
             }
             
-            val isGzip = (customUrl ?: url).endsWith(".gz")
+            val isGzip = urlString.endsWith(".gz")
             
             connection.inputStream.use { rawInput ->
-                val input = if (isGzip) GZIPInputStream(rawInput) else rawInput
+                val input = try {
+                    if (isGzip) GZIPInputStream(rawInput) else rawInput
+                } catch (e: java.io.IOException) {
+                    // If GZIP wrapper fails, maybe it wasn't actually gzipped (server might have decompressed it)
+                    rawInput
+                }
+                
                 file.outputStream().use { output ->
                     input.copyTo(output)
                 }
             }
-            file
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
         }
     }
 
