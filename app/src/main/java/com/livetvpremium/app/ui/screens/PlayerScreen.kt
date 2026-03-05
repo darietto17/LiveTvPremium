@@ -95,8 +95,19 @@ fun PlayerScreen(
             // ExoPlayer Implementation
             var exoPlayer by remember { mutableStateOf<ExoPlayer?>(null) }
             val watchHistory by settingsViewModel.watchHistory.collectAsState()
+            val proxyUrl by settingsViewModel.proxyUrl.collectAsState()
             
-            val saveHistory: (Long, Long) -> Unit = remember(url, title, groupName, posterUrl) {
+            val finalUrl = remember(url, proxyUrl) {
+                if (proxyUrl.isNotBlank()) {
+                    // Prepend proxy if configured, handle trailing slash
+                    val base = if (proxyUrl.endsWith("/")) proxyUrl else "$proxyUrl/"
+                    "$base$url"
+                } else {
+                    url
+                }
+            }
+
+            val saveHistory: (Long, Long) -> Unit = remember(finalUrl, title, groupName, posterUrl) {
                 { currentPos, duration -> 
                     if (isVod && currentPos > 5000 && duration > 0) {
                         val isCompleted = duration > 0 && currentPos >= duration - 15000L
@@ -124,12 +135,12 @@ fun PlayerScreen(
                                 )
                                 settingsViewModel.addOrUpdateWatchHistoryItem(historyItem)
                             } else {
-                                settingsViewModel.removeWatchHistoryItem(url)
+                                settingsViewModel.removeWatchHistoryItem(finalUrl)
                             }
                         } else if (!isCompleted || !groupName.contains("Serie", ignoreCase = true)) {
                             val historyItem = com.livetvpremium.app.model.WatchHistoryItem(
                                 title = title,
-                                originalUrl = url,
+                                originalUrl = finalUrl,
                                 groupName = groupName,
                                 posterUrl = posterUrl,
                                 progressMs = currentPos,
@@ -142,7 +153,7 @@ fun PlayerScreen(
                 }
             }
             
-            DisposableEffect(url) {
+            DisposableEffect(finalUrl) {
                 val trackSelector = DefaultTrackSelector(context).apply {
                     setParameters(buildUponParameters().setPreferredAudioLanguage("it"))
                 }
@@ -176,30 +187,30 @@ fun PlayerScreen(
                     .setLoadControl(loadControl)
                     .build()
                     .apply {
-                        val mediaItemBuilder = MediaItem.Builder().setUri(Uri.parse(url))
+                        val mediaItemBuilder = MediaItem.Builder().setUri(Uri.parse(finalUrl))
                         
                         // Help ExoPlayer identify M3U8 streams if they lack the correct extension or use proxy
-                        val isM3u8 = url.contains(".m3u8", ignoreCase = true) || 
-                            (!url.contains(".ts", ignoreCase = true) && !url.contains(".mp4", ignoreCase = true) && !url.contains(".mkv", ignoreCase = true) && (groupName.contains("live", ignoreCase = true) || url.contains("proxy", ignoreCase = true)))
+                        val isM3u8 = finalUrl.contains(".m3u8", ignoreCase = true) || 
+                            (!finalUrl.contains(".ts", ignoreCase = true) && !finalUrl.contains(".mp4", ignoreCase = true) && !finalUrl.contains(".mkv", ignoreCase = true) && (groupName.contains("live", ignoreCase = true) || finalUrl.contains("proxy", ignoreCase = true)))
                             
                         if (isM3u8) {
                             mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
-                        } else if (url.contains(".ts", ignoreCase = true)) {
+                        } else if (finalUrl.contains(".ts", ignoreCase = true)) {
                             mediaItemBuilder.setMimeType(MimeTypes.VIDEO_MP2T)
-                        } else if (url.contains(".mp4", ignoreCase = true)) {
+                        } else if (finalUrl.contains(".mp4", ignoreCase = true)) {
                             mediaItemBuilder.setMimeType(MimeTypes.VIDEO_MP4)
-                        } else if (url.contains(".mkv", ignoreCase = true)) {
+                        } else if (finalUrl.contains(".mkv", ignoreCase = true)) {
                             mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_MATROSKA)
                         } else {
                             // Se non c'è un'estensione chiara nell'URL, prova sempre M3U8 come fallback
                             // La maggior parte dei server proxy VOD e live servono HLS
                             mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
                         }
-
+ 
                         setMediaItem(mediaItemBuilder.build())
                         
                         if (isVod) {
-                            val existingHistory = watchHistory.find { it.originalUrl == url }
+                            val existingHistory = watchHistory.find { it.originalUrl == finalUrl }
                             if (existingHistory != null && existingHistory.progressMs > 0) {
                                 val startPosition = (existingHistory.progressMs - 5000L).coerceAtLeast(0L)
                                 seekTo(startPosition)
