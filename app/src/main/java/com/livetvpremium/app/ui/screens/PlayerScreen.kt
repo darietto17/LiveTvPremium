@@ -288,6 +288,7 @@ fun PlayerScreen(
                         DefaultTsPayloadReaderFactory.FLAG_DETECT_ACCESS_UNITS or
                         DefaultTsPayloadReaderFactory.FLAG_IGNORE_SPLICE_INFO_STREAM or
                         DefaultTsPayloadReaderFactory.FLAG_ENABLE_HDMV_DTS_AUDIO_STREAMS or
+                        (1 shl 6) or // FLAG_IGNORE_PCR: Critical for IPTV to avoid BufferQueue/AudioTrack stalls
                         (1 shl 3)    // FLAG_ALLOW_NON_CONSECUTIVE_PIDS
                     )
                     .setAdtsExtractorFlags(androidx.media3.extractor.ts.AdtsExtractor.FLAG_ENABLE_CONSTANT_BITRATE_SEEKING)
@@ -315,7 +316,10 @@ fun PlayerScreen(
                     .setBackBuffer(10_000, true)
                     .build()
 
-                val player = ExoPlayer.Builder(context)
+                val renderersFactory = DefaultRenderersFactory(context)
+                    .setEnableDecoderFallback(true) // Crucial: switch to sw decoder if MediaCodec/BufferQueue stalls
+
+                val player = ExoPlayer.Builder(context, renderersFactory)
                     .setTrackSelector(trackSelector)
                     .setMediaSourceFactory(mediaSourceFactory)
                     .setLoadControl(loadControl)
