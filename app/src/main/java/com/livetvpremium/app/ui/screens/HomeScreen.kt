@@ -178,7 +178,8 @@ fun HomeScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
                     .padding(horizontal = 16.dp)
-                    .focusRequester(contentFocusRequester),
+                    .focusRequester(contentFocusRequester)
+                    .focusProperties { down = bottomBarFocusRequester },
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 if (watchHistory.isNotEmpty()) {
@@ -445,6 +446,7 @@ fun HomeScreen(
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                             modifier = Modifier.fillMaxSize()
+                                .focusProperties { down = bottomBarFocusRequester }
                         ) {
                             items(displayItems.size) { index ->
                                 val item = displayItems[index]
@@ -547,6 +549,7 @@ fun HomeScreen(
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                         modifier = Modifier.fillMaxSize()
+                            .focusProperties { down = bottomBarFocusRequester }
                     ) {
                         items(currentGroups.size) { index ->
                             val group = currentGroups[index]
