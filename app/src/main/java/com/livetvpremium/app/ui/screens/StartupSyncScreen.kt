@@ -22,19 +22,22 @@ import com.livetvpremium.app.R
 import com.livetvpremium.app.ui.viewmodel.MainViewModel
 import com.livetvpremium.app.ui.viewmodel.SyncState
 
+import androidx.compose.ui.platform.LocalContext
+
 @Composable
 fun StartupSyncScreen(
     viewModel: MainViewModel,
-    playlistUrl: String,
     githubToken: String? = null,
+    lastSyncTime: Long = 0L,
     onSyncComplete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val syncState by viewModel.syncState.collectAsState()
+    val context = LocalContext.current
 
-    LaunchedEffect(githubToken) {
+    LaunchedEffect(githubToken, lastSyncTime) {
         if (syncState is SyncState.Idle) {
-             viewModel.syncPlaylist(playlistUrl, null, githubToken)
+             viewModel.syncAll(githubToken, lastSyncTime, false, context)
         }
     }
 

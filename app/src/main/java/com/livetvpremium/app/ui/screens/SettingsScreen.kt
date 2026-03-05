@@ -80,6 +80,19 @@ fun SettingsScreen(
                     onCheckedChange = { viewModel.saveUseVlcPlayer(it) }
                 )
             }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Button(
+                onClick = {
+                    viewModel.saveLastSyncTime(0L) // Force expiration
+                    onNavigateBack() // Go back to Home
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Text("Forza Sincronizzazione Ora")
+            }
         }
     }
 }

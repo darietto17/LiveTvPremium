@@ -18,21 +18,50 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.livetvpremium.app.model.M3UItem
 import com.livetvpremium.app.ui.components.GlassCard
 import com.livetvpremium.app.ui.viewmodel.MainViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupListScreen(
+    categoryType: String,
     groupName: String,
     viewModel: MainViewModel,
     onNavigateBack: () -> Unit,
-    onNavigateToDetails: (String) -> Unit,
+    onNavigateToDetails: (String, String, String) -> Unit,
+    onNavigateToEpisodeList: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val allItems by viewModel.allItems.collectAsState()
-    val groupItems = remember(allItems, groupName) {
-        allItems.filter { it.groupTitle == groupName }
+    val liveItems by viewModel.liveItems.collectAsState()
+    val filmItems by viewModel.filmItems.collectAsState()
+    val serieItems by viewModel.serieItems.collectAsState()
+    
+    val groupItems = remember(liveItems, filmItems, serieItems, groupName, categoryType) {
+        val listToFilter = when (categoryType) {
+            "live" -> liveItems
+            "film" -> filmItems
+            "serie" -> serieItems
+            else -> liveItems + filmItems + serieItems
+        }
+        listToFilter.filter { it.groupTitle == groupName }
+    }
+    
+    val displayItems = remember(groupItems, categoryType) {
+        if (categoryType == "serie") {
+            val regex = "^(.*?)(?:\\s+S\\d{1,2}\\s*E\\d{1,3})".toRegex(RegexOption.IGNORE_CASE)
+            val seriesMap = mutableMapOf<String, M3UItem>()
+            for (item in groupItems) {
+                val match = regex.find(item.name)
+                val seriesName = match?.groupValues?.get(1)?.trim() ?: item.name
+                if (!seriesMap.containsKey(seriesName)) {
+                    seriesMap[seriesName] = item.copy(name = seriesName)
+                }
+            }
+            seriesMap.values.toList().sortedBy { it.name }
+        } else {
+            groupItems
+        }
     }
 
     Scaffold(
@@ -60,12 +89,22 @@ fun GroupListScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            items(groupItems) { item ->
+            items(displayItems) { item ->
                 GlassCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(2f / 3f)
-                        .clickable { onNavigateToDetails(item.tvgId.ifEmpty { item.name }) }
+                        .clickable { 
+                            if (categoryType == "serie") {
+                                onNavigateToEpisodeList(item.name)
+                            } else {
+                                onNavigateToDetails(
+                                    item.tvgId.ifEmpty { "no_id" }, 
+                                    item.name, 
+                                    item.url
+                                )
+                            }
+                        }
                 ) {
                     Column(
                         modifier = Modifier.fillMaxSize()
