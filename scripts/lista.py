@@ -30,6 +30,53 @@ def headers_to_extvlcopt(headers):
         vlc_opts.append(f'#EXTVLCOPT:http-{key.lower()}={value}')
     return vlc_opts
 
+def clean_m3u_groups(playlist_text):
+    """Analizza il testo della playlist e sostituisce i group-title con categorie macro."""
+    import os
+    import json
+    categories_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "categories.json")
+    try:
+        if os.path.exists(categories_file):
+            with open(categories_file, 'r', encoding='utf-8') as f:
+                categories_map = json.load(f)
+        else:
+            categories_map = {}
+    except Exception as e:
+        print(f"[!] Errore lettura categories.json: {e}")
+        categories_map = {}
+
+    def map_category(group_title, channel_name):
+        gt = group_title.lower() if group_title else ""
+        cn = channel_name.lower() if channel_name else ""
+        text = f"{gt} {cn}"
+        
+        for cat_name, keywords in categories_map.items():
+            if any(k.lower() in text for k in keywords):
+                return cat_name
+                
+        if 'it' in gt.split() or 'ita' in gt.split() or 'italia' in text:
+            return "Intrattenimento"
+        return "Altri"
+
+    new_lines = []
+    for line in playlist_text.splitlines():
+        if line.startswith('#EXTINF:'):
+            name_match = re.search(r',(.+)$', line)
+            channel_name = name_match.group(1).strip() if name_match else ""
+            
+            group_match = re.search(r'group-title="([^"]*)"', line)
+            if group_match:
+                old_group = group_match.group(1)
+                new_group = map_category(old_group, channel_name)
+                line = line.replace(f'group-title="{old_group}"', f'group-title="{new_group}"')
+            else:
+                new_group = map_category("", channel_name)
+                if ',' in line:
+                    parts = line.split(',', 1)
+                    line = f'{parts[0]} group-title="{new_group}",{parts[1]}'
+        new_lines.append(line)
+    return "\n".join(new_lines)
+
 def merger_playlist():
     # Codice del primo script qui
     # Aggiungi il codice del tuo script "merger_playlist.py" in questa funzione.
@@ -133,6 +180,7 @@ def merger_playlist():
     
     # 3. Unisci tutte le playlist (con i canali italiani ordinati all'inizio)
     lista = sorted_italian_playlist + "\n" + playlist_eventi + "\n" + playlist_sportsonline + "\n" + playlist_streamed + "\n" + playlist_pluto
+    lista = clean_m3u_groups(lista)
     
     # Aggiungi intestazione EPG
     lista = f'#EXTM3U url-tvg="https://raw.githubusercontent.com/{NOMEGITHUB}/{NOMEREPO}/refs/heads/main/epg.xml"\n' + lista
@@ -248,6 +296,7 @@ def merger_playlistworld():
     playlist_world = download_playlist(url_world, exclude_group_title="Italy")
     # 3. Unisci tutte le playlist
     lista = sorted_italian_playlist + "\n" + playlist_eventi + "\n" + playlist_sportsonline + "\n" + playlist_streamed + "\n" + playlist_pluto + "\n" + playlist_world
+    lista = clean_m3u_groups(lista)
     
     # Aggiungi intestazione EPG
     lista = f'#EXTM3U url-tvg="https://raw.githubusercontent.com/{NOMEGITHUB}/{NOMEREPO}/refs/heads/main/epg.xml"\n' + lista
