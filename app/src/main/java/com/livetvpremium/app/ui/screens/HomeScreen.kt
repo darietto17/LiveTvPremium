@@ -97,16 +97,28 @@ fun HomeScreen(
     var liveChannelToPlay by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<com.livetvpremium.app.model.M3UItem?>(null) }
     
     val bottomBarFocusRequester = remember { FocusRequester() }
+    val contentFocusRequester = remember { FocusRequester() }
+    
+    // Initial focus request for TV
+    LaunchedEffect(Unit) {
+        bottomBarFocusRequester.requestFocus()
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("LiveTvPremium", fontWeight = FontWeight.Bold) },
                 actions = {
-                    IconButton(onClick = onNavigateToSearch) {
+                    IconButton(
+                        modifier = Modifier.focusProperties { down = contentFocusRequester },
+                        onClick = onNavigateToSearch
+                    ) {
                         Icon(imageVector = Icons.Default.Search, contentDescription = "Search")
                     }
-                    IconButton(onClick = onNavigateToSettings) {
+                    IconButton(
+                        modifier = Modifier.focusProperties { down = contentFocusRequester },
+                        onClick = onNavigateToSettings
+                    ) {
                         Icon(imageVector = Icons.Default.Settings, contentDescription = "Settings")
                     }
                 },
@@ -117,30 +129,32 @@ fun HomeScreen(
         },
         bottomBar = {
             NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                modifier = Modifier
-                    .focusRequester(bottomBarFocusRequester)
-                    .focusTarget()
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
             ) {
                 NavigationBarItem(
+                    modifier = Modifier.focusRequester(bottomBarFocusRequester)
+                        .focusProperties { up = contentFocusRequester },
                     icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
                     label = { Text("Home") },
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 }
                 )
                 NavigationBarItem(
+                    modifier = Modifier.focusProperties { up = contentFocusRequester },
                     icon = { Icon(Icons.Default.Tv, contentDescription = "Live TV") },
                     label = { Text("Live TV") },
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 }
                 )
                 NavigationBarItem(
+                    modifier = Modifier.focusProperties { up = contentFocusRequester },
                     icon = { Icon(Icons.Default.Movie, contentDescription = "Film") },
                     label = { Text("Film") },
                     selected = selectedTab == 2,
                     onClick = { selectedTab = 2 }
                 )
                 NavigationBarItem(
+                    modifier = Modifier.focusProperties { up = contentFocusRequester },
                     icon = { Icon(Icons.Default.Subscriptions, contentDescription = "Serie TV") },
                     label = { Text("Serie") },
                     selected = selectedTab == 3,
@@ -164,10 +178,7 @@ fun HomeScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
                     .padding(horizontal = 16.dp)
-                    .focusProperties {
-                        left = bottomBarFocusRequester
-                        right = bottomBarFocusRequester
-                    },
+                    .focusRequester(contentFocusRequester),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 if (watchHistory.isNotEmpty()) {
@@ -343,9 +354,7 @@ fun HomeScreen(
                     Column(modifier = Modifier
                         .weight(0.3f)
                         .fillMaxHeight()
-                        .focusProperties {
-                            left = bottomBarFocusRequester
-                        }
+                        .focusRequester(contentFocusRequester)
                     ) {
                         val title = when (selectedTab) {
                             1 -> "Canali TV"
@@ -395,9 +404,6 @@ fun HomeScreen(
                     Column(modifier = Modifier
                         .weight(0.7f)
                         .fillMaxHeight()
-                        .focusProperties {
-                            right = bottomBarFocusRequester
-                        }
                     ) {
                         Text(
                             text = selectedGroup,

@@ -54,8 +54,7 @@ fun GlassCard(
                 width = if (isFocused) 2.dp else 1.dp,
                 color = if (isFocused) androidx.compose.ui.graphics.Color.White else GlassBorder,
                 shape = RoundedCornerShape(16.dp)
-            )
-            .focusable(interactionSource = interactionSource),
+            ),
         content = content
     )
 }
