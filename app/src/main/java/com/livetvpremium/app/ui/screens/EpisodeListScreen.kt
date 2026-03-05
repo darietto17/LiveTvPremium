@@ -40,6 +40,7 @@ fun EpisodeListScreen(
     viewModel: MainViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToDetails: (String, String, String) -> Unit,
+    onNavigateToPlayer: (String, String, String, String?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val serieItems by viewModel.serieItems.collectAsState()
@@ -209,11 +210,11 @@ fun EpisodeListScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 4.dp)
-                        .clickable { onNavigateToDetails(
-                            item.tvgId.ifEmpty { "no_id" }, 
-                            item.name, 
-                            item.url
-                        ) }
+                        .clickable {
+                            val posterPath = tmdbDetails?.backdropPath ?: tmdbDetails?.posterPath
+                            val posterUrl = if (posterPath != null) "https://image.tmdb.org/t/p/w780$posterPath" else null
+                            onNavigateToPlayer(item.url, item.name, item.groupTitle, posterUrl)
+                        }
                 ) {
                     Row(
                         modifier = Modifier

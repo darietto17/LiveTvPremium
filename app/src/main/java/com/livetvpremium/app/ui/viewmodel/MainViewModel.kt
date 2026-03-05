@@ -4,10 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.livetvpremium.app.model.M3UItem
 import com.livetvpremium.app.repository.M3UParser
+import com.livetvpremium.app.repository.TmdbRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import java.net.URL
 import javax.net.ssl.HttpsURLConnection
@@ -37,6 +42,144 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
     val filmGroups = MutableStateFlow<List<String>>(emptyList())
     val serieGroups = MutableStateFlow<List<String>>(emptyList())
 
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
+
+    private val _searchResults = MutableStateFlow<List<M3UItem>>(emptyList())
+    val searchResults: StateFlow<List<M3UItem>> = _searchResults
+
+    fun search(query: String) {
+        _searchQuery.value = query
+        if (query.isBlank()) {
+            _searchResults.value = emptyList()
+            return
+        }
+        viewModelScope.launch(Dispatchers.Default) {
+            val q = query.trim()
+            val results = mutableListOf<M3UItem>()
+            val limit = 100
+            for (item in _liveItems.value) {
+                if (item.name.contains(q, ignoreCase = true)) {
+                    results.add(item)
+                    if (results.size >= limit) break
+                }
+            }
+            if (results.size < limit) {
+                for (item in _filmItems.value) {
+                    if (item.name.contains(q, ignoreCase = true)) {
+                        results.add(item)
+                        if (results.size >= limit) break
+                    }
+                }
+            }
+            if (results.size < limit) {
+                for (item in _serieItems.value) {
+                    if (item.name.contains(q, ignoreCase = true)) {
+                        results.add(item)
+                        if (results.size >= limit) break
+                    }
+                }
+            }
+            _searchResults.value = results
+        }
+    }
+
+    fun clearSearch() {
+        _searchQuery.value = ""
+        _searchResults.value = emptyList()
+    }
+
+    private val _recentFilms = MutableStateFlow<List<M3UItem>>(emptyList())
+    val recentFilms: StateFlow<List<M3UItem>> = _recentFilms
+
+    fun fetchRecentFilms(tmdbApiKey: String) {
+        if (tmdbApiKey.isBlank()) return
+        viewModelScope.launch(Dispatchers.Default) {
+            val films = _filmItems.value
+            if (films.isEmpty()) return@launch
+
+            val yearRegex = "\\((\\d{4})\\)".toRegex()
+            val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+
+            // Pre-filter: candidates that have a year >= (currentYear - 3) in their title
+            val candidates = films.filter { item ->
+                val year = yearRegex.find(item.name)?.groupValues?.get(1)?.toIntOrNull()
+                year != null && year >= currentYear - 3
+            }.take(80) // limit to avoid excessive API calls
+
+            // Immediately show year-sorted candidates while TMDB lookup runs
+            val yearSorted = candidates.sortedByDescending { item ->
+                yearRegex.find(item.name)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+            }.take(50)
+            _recentFilms.value = yearSorted
+
+            // Now enrich with exact TMDB release dates
+            val repo = TmdbRepository()
+            val semaphore = Semaphore(5)
+            val datedFilms = candidates.map { item ->
+                async(Dispatchers.IO) {
+                    semaphore.withPermit {
+                        val date = repo.fetchReleaseDate(item.name, tmdbApiKey)
+                        item to (date ?: "0000-00-00")
+                    }
+                }
+            }.awaitAll()
+
+            val sorted = datedFilms
+                .sortedByDescending { it.second }
+                .take(50)
+                .map { it.first }
+
+            _recentFilms.value = sorted
+        }
+    }
+
+    private val _recentSeriesList = MutableStateFlow<List<M3UItem>>(emptyList())
+    val recentSeriesList: StateFlow<List<M3UItem>> = _recentSeriesList
+
+    fun fetchRecentSeries(tmdbApiKey: String) {
+        if (tmdbApiKey.isBlank()) return
+        viewModelScope.launch(Dispatchers.Default) {
+            val series = _serieItems.value
+            if (series.isEmpty()) return@launch
+
+            val serieRegex = "^(.*?)(?:\\s+S\\d{1,2}\\s*E\\d{1,3})".toRegex(RegexOption.IGNORE_CASE)
+
+            // Deduplicate by title, keep first occurrence as representative
+            val uniqueSeries = mutableMapOf<String, M3UItem>()
+            for (item in series) {
+                val match = serieRegex.find(item.name)
+                val title = match?.groupValues?.get(1)?.trim() ?: item.name
+                if (!uniqueSeries.containsKey(title)) {
+                    uniqueSeries[title] = item.copy(name = title)
+                    if (uniqueSeries.size >= 60) break
+                }
+            }
+
+            val candidates = uniqueSeries.values.toList()
+            // Show immediately while TMDB lookup runs
+            _recentSeriesList.value = candidates.take(50)
+
+            // Enrich with TMDB last_air_date
+            val repo = TmdbRepository()
+            val semaphore = Semaphore(5)
+            val datedSeries = candidates.map { item ->
+                async(Dispatchers.IO) {
+                    semaphore.withPermit {
+                        val date = repo.fetchSeriesLastAirDate(item.name, tmdbApiKey)
+                        item to (date ?: "0000-00-00")
+                    }
+                }
+            }.awaitAll()
+
+            val sorted = datedSeries
+                .sortedByDescending { it.second }
+                .take(50)
+                .map { it.first }
+
+            _recentSeriesList.value = sorted
+        }
+    }
     fun syncAll(githubToken: String? = null, lastSyncTime: Long = 0L, forceSync: Boolean = false, context: android.content.Context) {
         viewModelScope.launch {
             _syncState.value = SyncState.Loading(0.1f, "Vefication sync status...")

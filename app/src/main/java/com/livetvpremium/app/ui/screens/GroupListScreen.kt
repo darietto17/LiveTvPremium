@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -30,6 +31,7 @@ fun GroupListScreen(
     viewModel: MainViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToDetails: (String, String, String) -> Unit,
+    onNavigateToPlayer: (String, String, String, String?) -> Unit,
     onNavigateToEpisodeList: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -64,6 +66,8 @@ fun GroupListScreen(
         }
     }
 
+    var liveChannelToPlay by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<M3UItem?>(null) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -97,6 +101,8 @@ fun GroupListScreen(
                         .clickable { 
                             if (categoryType == "serie") {
                                 onNavigateToEpisodeList(item.name)
+                            } else if (categoryType == "live") {
+                                liveChannelToPlay = item
                             } else {
                                 onNavigateToDetails(
                                     item.tvgId.ifEmpty { "no_id" }, 
@@ -113,10 +119,11 @@ fun GroupListScreen(
                             AsyncImage(
                                 model = item.tvgLogo,
                                 contentDescription = item.name,
-                                contentScale = ContentScale.Crop,
+                                contentScale = if (categoryType == "live") ContentScale.Fit else ContentScale.Crop,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .weight(1f)
+                                    .padding(if (categoryType == "live") 8.dp else 0.dp)
                             )
                         } else {
                             Box(
@@ -142,5 +149,30 @@ fun GroupListScreen(
                 }
             }
         }
+    }
+
+    liveChannelToPlay?.let { channel ->
+        AlertDialog(
+            onDismissRequest = { liveChannelToPlay = null },
+            title = { Text("Seleziona Provider", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold) },
+            text = { Text("Come vuoi riprodurre questo canale live?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    val encodedUrl = java.net.URLEncoder.encode(channel.url, "UTF-8")
+                    onNavigateToPlayer("https://eproxy.rrinformatica.cloud/proxy/manifest.m3u8?url=$encodedUrl", channel.name, channel.groupTitle, channel.tvgLogo)
+                    liveChannelToPlay = null
+                }) {
+                    Text("Tramite Proxy (eProxy)")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    onNavigateToPlayer(channel.url, channel.name, channel.groupTitle, channel.tvgLogo)
+                    liveChannelToPlay = null
+                }) {
+                    Text("Diretto (ISP)")
+                }
+            }
+        )
     }
 }

@@ -16,6 +16,7 @@ import com.livetvpremium.app.ui.screens.EpisodeListScreen
 import com.livetvpremium.app.ui.screens.DetailsScreen
 import com.livetvpremium.app.ui.screens.PlayerScreen
 import com.livetvpremium.app.ui.screens.SettingsScreen
+import com.livetvpremium.app.ui.screens.SearchScreen
 
 sealed class Screen(val route: String) {
     object StartupSync : Screen("startup_sync")
@@ -48,6 +49,7 @@ sealed class Screen(val route: String) {
         }
     }
     object Settings : Screen("settings")
+    object Search : Screen("search")
 }
 
 @Composable
@@ -96,6 +98,24 @@ fun AppNavigation(
                 },
                 onNavigateToEpisodeList = { seriesTitle, groupName ->
                     navController.navigate(Screen.EpisodeList.createRoute(seriesTitle, groupName))
+                },
+                onNavigateToSearch = {
+                    navController.navigate(Screen.Search.route)
+                }
+            )
+        }
+        composable(Screen.Search.route) {
+            SearchScreen(
+                viewModel = mainViewModel,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToDetails = { tvgId, groupName, title, url ->
+                    navController.navigate(Screen.Details.createRoute(tvgId, groupName, title, url))
+                },
+                onNavigateToPlayer = { url, title, selectedGroup, posterUrl ->
+                    navController.navigate(Screen.Player.createRoute(url, title, selectedGroup, posterUrl ?: ""))
+                },
+                onNavigateToEpisodeList = { seriesTitle, groupName ->
+                    navController.navigate(Screen.EpisodeList.createRoute(seriesTitle, groupName))
                 }
             )
         }
@@ -109,6 +129,9 @@ fun AppNavigation(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToDetails = { tvgId, title, url ->
                     navController.navigate(Screen.Details.createRoute(tvgId, groupName, title, url))
+                },
+                onNavigateToPlayer = { url, title, selectedGroup, posterUrl ->
+                    navController.navigate(Screen.Player.createRoute(url, title, selectedGroup, posterUrl ?: ""))
                 },
                 onNavigateToEpisodeList = { seriesTitle ->
                     navController.navigate(Screen.EpisodeList.createRoute(seriesTitle, groupName))
@@ -130,6 +153,9 @@ fun AppNavigation(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToDetails = { tvgId, title, url ->
                     navController.navigate(Screen.Details.createRoute(tvgId, groupName, title, url))
+                },
+                onNavigateToPlayer = { url, title, selectedGroup, posterUrl ->
+                    navController.navigate(Screen.Player.createRoute(url, title, selectedGroup, posterUrl ?: ""))
                 }
             )
         }
@@ -171,7 +197,8 @@ fun AppNavigation(
                 title = title,
                 groupName = groupName,
                 posterUrl = posterUrl,
-                settingsViewModel = settingsViewModel
+                settingsViewModel = settingsViewModel,
+                mainViewModel = mainViewModel
             )
         }
         composable(Screen.Settings.route) {

@@ -18,8 +18,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -57,6 +61,7 @@ fun HomeScreen(
     onNavigateToSettings: () -> Unit,
     onNavigateToDetails: (String, String, String, String) -> Unit,
     onNavigateToEpisodeList: (String, String) -> Unit,
+    onNavigateToSearch: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val liveGroups by viewModel.liveGroups.collectAsState()
@@ -65,30 +70,34 @@ fun HomeScreen(
     val filmItems by viewModel.filmItems.collectAsState()
     val serieItems by viewModel.serieItems.collectAsState()
     
-    val recentSeries = remember(serieItems) {
-        val regex = "^(.*?)(?:\\s+S\\d{1,2}\\s*E\\d{1,3})".toRegex(RegexOption.IGNORE_CASE)
-        val uniqueSeries = mutableMapOf<String, com.livetvpremium.app.model.M3UItem>()
-        for (item in serieItems) {
-            val match = regex.find(item.name)
-            val title = match?.groupValues?.get(1)?.trim() ?: item.name
-            if (!uniqueSeries.containsKey(title)) {
-                uniqueSeries[title] = item
-                if (uniqueSeries.size >= 50) break
+    val recentSeries by viewModel.recentSeriesList.collectAsState()
+
+    val recentFilms by viewModel.recentFilms.collectAsState()
+    val tmdbApiKey by settingsViewModel.tmdbApiKey.collectAsState()
+
+    // Trigger TMDB-based sorting once items and API key are available
+    LaunchedEffect(filmItems, serieItems, tmdbApiKey) {
+        if (tmdbApiKey.isNotEmpty()) {
+            if (filmItems.isNotEmpty() && recentFilms.isEmpty()) {
+                viewModel.fetchRecentFilms(tmdbApiKey)
+            }
+            if (serieItems.isNotEmpty() && recentSeries.isEmpty()) {
+                viewModel.fetchRecentSeries(tmdbApiKey)
             }
         }
-        uniqueSeries.values.toList()
     }
 
     val watchHistory by settingsViewModel.watchHistory.collectAsState()
     
     var selectedTab by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(0) }
+    var liveChannelToPlay by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<com.livetvpremium.app.model.M3UItem?>(null) }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("LiveTvPremium", fontWeight = FontWeight.Bold) },
                 actions = {
-                    IconButton(onClick = { /* Expand Search */ }) {
+                    IconButton(onClick = onNavigateToSearch) {
                         Icon(imageVector = Icons.Default.Search, contentDescription = "Search")
                     }
                     IconButton(onClick = onNavigateToSettings) {
@@ -176,7 +185,7 @@ fun HomeScreen(
                                 ) {
                                     Column(modifier = Modifier.fillMaxSize()) {
                                         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                                            if (history.posterUrl != null) {
+                                            if (history.posterUrl != null && history.posterUrl != "null" && history.posterUrl.isNotBlank()) {
                                                 val imageUrl = if (history.posterUrl.startsWith("http")) {
                                                     history.posterUrl
                                                 } else {
@@ -232,7 +241,7 @@ fun HomeScreen(
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        items(filmItems.take(50)) { film ->
+                        items(recentFilms) { film ->
                            GlassCard(
                                modifier = Modifier.width(150.dp).aspectRatio(2f/3f).clickable {
                                    onNavigateToDetails(
@@ -298,59 +307,251 @@ fun HomeScreen(
                 }
             }
         } else {
-            Column(
-                modifier = modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(16.dp)
-            ) {
-                val title = when (selectedTab) {
-                    1 -> "Canali TV"
-                    2 -> "Film On Demand"
-                    else -> "Serie TV"
+            val isLargeScreen = LocalConfiguration.current.screenWidthDp >= 800
+            val categoryType = when (selectedTab) {
+                1 -> "live"
+                2 -> "film"
+                else -> "serie"
+            }
+            
+            if (isLargeScreen && currentGroups.isNotEmpty()) {
+                var selectedGroup by remember(selectedTab, currentGroups) { 
+                    androidx.compose.runtime.mutableStateOf(currentGroups.firstOrNull() ?: "")
                 }
-                Text(
-                    text = title,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
                 
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = 140.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.fillMaxSize()
+                Row(
+                    modifier = modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(currentGroups) { group ->
-                        GlassCard(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(16f / 9f)
-                                .clickable {
-                                    val categoryType = when (selectedTab) {
-                                        1 -> "live"
-                                        2 -> "film"
-                                        else -> "serie"
-                                    }
-                                    onNavigateToGroup(categoryType, group)
-                                }
+                    // Master List (Left Panel - 30%)
+                    Column(modifier = Modifier.weight(0.3f).fillMaxHeight()) {
+                        val title = when (selectedTab) {
+                            1 -> "Canali TV"
+                            2 -> "Film On Demand"
+                            else -> "Serie TV"
+                        }
+                        Text(
+                            text = title,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxSize()
                         ) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
+                            items(currentGroups.size) { index ->
+                                val group = currentGroups[index]
+                                val isSelected = group == selectedGroup
+                                GlassCard(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { selectedGroup = group }
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(
+                                                if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) 
+                                                else androidx.compose.ui.graphics.Color.Transparent
+                                            )
+                                            .padding(16.dp)
+                                    ) {
+                                        Text(
+                                            text = group,
+                                            color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Detail Grid (Right Panel - 70%)
+                    Column(modifier = Modifier.weight(0.7f).fillMaxHeight()) {
+                        Text(
+                            text = selectedGroup,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                        
+                        val listToFilter = when (categoryType) {
+                            "live" -> viewModel.liveItems.collectAsState().value
+                            "film" -> viewModel.filmItems.collectAsState().value
+                            else -> viewModel.serieItems.collectAsState().value
+                        }
+                        
+                        val groupItems = remember(listToFilter, selectedGroup, categoryType) {
+                            listToFilter.filter { it.groupTitle == selectedGroup }
+                        }
+                        
+                        val displayItems = remember(groupItems, categoryType) {
+                            if (categoryType == "serie") {
+                                val regex = "^(.*?)(?:\\s+S\\d{1,2}\\s*E\\d{1,3})".toRegex(RegexOption.IGNORE_CASE)
+                                val seriesMap = mutableMapOf<String, com.livetvpremium.app.model.M3UItem>()
+                                for (item in groupItems) {
+                                    val match = regex.find(item.name)
+                                    val seriesName = match?.groupValues?.get(1)?.trim() ?: item.name
+                                    if (!seriesMap.containsKey(seriesName)) {
+                                        seriesMap[seriesName] = item.copy(name = seriesName)
+                                    }
+                                }
+                                seriesMap.values.toList().sortedBy { it.name }
+                            } else {
+                                groupItems
+                            }
+                        }
+
+                        LazyVerticalGrid(
+                            columns = GridCells.Adaptive(minSize = 140.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(displayItems.size) { index ->
+                                val item = displayItems[index]
+                                GlassCard(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .aspectRatio(2f / 3f)
+                                        .clickable { 
+                                            if (categoryType == "serie") {
+                                                onNavigateToEpisodeList(item.name, item.groupTitle)
+                                            } else if (categoryType == "live") {
+                                                liveChannelToPlay = item
+                                            } else {
+                                                onNavigateToDetails(
+                                                    item.tvgId.ifEmpty { "no_id" }, 
+                                                    item.groupTitle,
+                                                    item.name, 
+                                                    item.url
+                                                )
+                                            }
+                                        }
+                                ) {
+                                    Column(
+                                        modifier = Modifier.fillMaxSize()
+                                    ) {
+                                        if (item.tvgLogo.isNotEmpty()) {
+                                            AsyncImage(
+                                                model = item.tvgLogo,
+                                                contentDescription = item.name,
+                                                contentScale = if (categoryType == "live") ContentScale.Fit else ContentScale.Crop,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .weight(1f)
+                                                    .padding(if (categoryType == "live") 8.dp else 0.dp)
+                                            )
+                                        } else {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .weight(1f),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(item.name.take(2), style = MaterialTheme.typography.headlineLarge)
+                                            }
+                                        }
+                                        
+                                        Text(
+                                            text = item.name,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            maxLines = 1,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                            modifier = Modifier
+                                                .padding(8.dp)
+                                                .fillMaxWidth()
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Mobile layout (or fallback if no groups)
+                Column(
+                    modifier = modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .padding(16.dp)
+                ) {
+                    val title = when (selectedTab) {
+                        1 -> "Canali TV"
+                        2 -> "Film On Demand"
+                        else -> "Serie TV"
+                    }
+                    Text(
+                        text = title,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(minSize = 140.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(currentGroups.size) { index ->
+                            val group = currentGroups[index]
+                            GlassCard(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(16f / 9f)
+                                    .clickable {
+                                        onNavigateToGroup(categoryType, group)
+                                    }
                             ) {
-                                Text(
-                                    text = group,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontWeight = FontWeight.SemiBold
-                                )
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = group,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    liveChannelToPlay?.let { channel ->
+        AlertDialog(
+            onDismissRequest = { liveChannelToPlay = null },
+            title = { Text("Seleziona Provider", fontWeight = FontWeight.Bold) },
+            text = { Text("Come vuoi riprodurre questo canale live?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    val encodedUrl = java.net.URLEncoder.encode(channel.url, "UTF-8")
+                    onNavigateToPlayer("https://eproxy.rrinformatica.cloud/proxy/manifest.m3u8?url=$encodedUrl", channel.name, channel.groupTitle, channel.tvgLogo)
+                    liveChannelToPlay = null
+                }) {
+                    Text("Tramite Proxy (eProxy)")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    onNavigateToPlayer(channel.url, channel.name, channel.groupTitle, channel.tvgLogo)
+                    liveChannelToPlay = null
+                }) {
+                    Text("Diretto (ISP)")
+                }
+            }
+        )
     }
 }

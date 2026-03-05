@@ -70,7 +70,19 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
 
     fun addOrUpdateWatchHistoryItem(item: WatchHistoryItem) {
         val currentList = _watchHistory.value.toMutableList()
-        val index = currentList.indexOfFirst { it.title == item.title && it.groupName == item.groupName }
+        val index = if (item.groupName.contains("Serie", ignoreCase = true)) {
+            val regex = "^(.*?)(?:\\s+S\\d{1,2}\\s*E\\d{1,3})".toRegex(RegexOption.IGNORE_CASE)
+            val newMatch = regex.find(item.title)
+            val newSeriesName = newMatch?.groupValues?.get(1)?.trim() ?: item.title
+            
+            currentList.indexOfFirst { 
+                it.groupName == item.groupName && 
+                ((regex.find(it.title)?.groupValues?.get(1)?.trim() ?: it.title) == newSeriesName)
+            }
+        } else {
+            currentList.indexOfFirst { it.title == item.title && it.groupName == item.groupName }
+        }
+        
         if (index != -1) {
             currentList[index] = item
         } else {
@@ -82,5 +94,15 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
         
         _watchHistory.value = trimmedList
         viewModelScope.launch { repository.saveWatchHistory(trimmedList) }
+    }
+
+    fun removeWatchHistoryItem(url: String) {
+        val currentList = _watchHistory.value.toMutableList()
+        val index = currentList.indexOfFirst { it.originalUrl == url }
+        if (index != -1) {
+            currentList.removeAt(index)
+            _watchHistory.value = currentList
+            viewModelScope.launch { repository.saveWatchHistory(currentList) }
+        }
     }
 }

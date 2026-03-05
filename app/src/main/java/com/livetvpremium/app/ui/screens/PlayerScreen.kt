@@ -31,6 +31,7 @@ fun PlayerScreen(
     groupName: String,
     posterUrl: String?,
     settingsViewModel: SettingsViewModel,
+    mainViewModel: com.livetvpremium.app.ui.viewmodel.MainViewModel,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -60,6 +61,52 @@ fun PlayerScreen(
             var exoPlayer by remember { mutableStateOf<ExoPlayer?>(null) }
             val watchHistory by settingsViewModel.watchHistory.collectAsState()
             
+            val saveHistory: (Long, Long) -> Unit = remember(url, title, groupName, posterUrl) {
+                { currentPos, duration -> 
+                    if (isVod && currentPos > 5000 && duration > 0) {
+                        val isCompleted = duration > 0 && currentPos >= duration - 15000L
+                        if (isCompleted && groupName.contains("Serie", ignoreCase = true)) {
+                            val episodes = mainViewModel.serieItems.value.filter { it.groupTitle == groupName }
+                            val regex = "^(.*?)(?:\\s+S\\d{1,2}\\s*E\\d{1,3})".toRegex(RegexOption.IGNORE_CASE)
+                            val currentMatch = regex.find(title)
+                            val currentSeriesName = currentMatch?.groupValues?.get(1)?.trim() ?: title
+                            
+                            val sameSeriesEpisodes = episodes.filter { 
+                                (regex.find(it.name)?.groupValues?.get(1)?.trim() ?: it.name) == currentSeriesName
+                            }.sortedBy { it.name }
+                            
+                            val currentIndex = sameSeriesEpisodes.indexOfFirst { it.name == title }
+                            if (currentIndex != -1 && currentIndex < sameSeriesEpisodes.size - 1) {
+                                val nextEpisode = sameSeriesEpisodes[currentIndex + 1]
+                                val historyItem = com.livetvpremium.app.model.WatchHistoryItem(
+                                    title = nextEpisode.name,
+                                    originalUrl = nextEpisode.url,
+                                    groupName = nextEpisode.groupTitle,
+                                    posterUrl = posterUrl,
+                                    progressMs = 0L,
+                                    durationMs = 0L,
+                                    timestamp = System.currentTimeMillis()
+                                )
+                                settingsViewModel.addOrUpdateWatchHistoryItem(historyItem)
+                            } else {
+                                settingsViewModel.removeWatchHistoryItem(url)
+                            }
+                        } else if (!isCompleted || !groupName.contains("Serie", ignoreCase = true)) {
+                            val historyItem = com.livetvpremium.app.model.WatchHistoryItem(
+                                title = title,
+                                originalUrl = url,
+                                groupName = groupName,
+                                posterUrl = posterUrl,
+                                progressMs = currentPos,
+                                durationMs = duration,
+                                timestamp = System.currentTimeMillis()
+                            )
+                            settingsViewModel.addOrUpdateWatchHistoryItem(historyItem)
+                        }
+                    }
+                }
+            }
+            
             DisposableEffect(url) {
                 val trackSelector = DefaultTrackSelector(context).apply {
                     setParameters(buildUponParameters().setPreferredAudioLanguage("it"))
@@ -84,18 +131,7 @@ fun PlayerScreen(
                 onDispose {
                     val currentPos = player.currentPosition
                     val duration = player.duration
-                    if (isVod && currentPos > 5000 && duration > 0) {
-                        val historyItem = com.livetvpremium.app.model.WatchHistoryItem(
-                            title = title,
-                            originalUrl = url,
-                            groupName = groupName,
-                            posterUrl = posterUrl,
-                            progressMs = currentPos,
-                            durationMs = duration,
-                            timestamp = System.currentTimeMillis()
-                        )
-                        settingsViewModel.addOrUpdateWatchHistoryItem(historyItem)
-                    }
+                    saveHistory(currentPos, duration)
                     player.release()
                 }
             }
@@ -105,19 +141,8 @@ fun PlayerScreen(
                 while (true) {
                     kotlinx.coroutines.delay(10000)
                     exoPlayer?.let { player ->
-                        val currentPos = player.currentPosition
-                        val duration = player.duration
-                        if (isVod && currentPos > 5000 && duration > 0 && player.isPlaying) {
-                            val historyItem = com.livetvpremium.app.model.WatchHistoryItem(
-                                title = title,
-                                originalUrl = url,
-                                groupName = groupName,
-                                posterUrl = posterUrl,
-                                progressMs = currentPos,
-                                durationMs = duration,
-                                timestamp = System.currentTimeMillis()
-                            )
-                            settingsViewModel.addOrUpdateWatchHistoryItem(historyItem)
+                        if (player.isPlaying) {
+                            saveHistory(player.currentPosition, player.duration)
                         }
                     }
                 }
