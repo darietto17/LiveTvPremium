@@ -23,6 +23,9 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     private val _proxyUrl = MutableStateFlow("")
     val proxyUrl: StateFlow<String> = _proxyUrl
 
+    private val _dnsUrl = MutableStateFlow("")
+    val dnsUrl: StateFlow<String> = _dnsUrl
+
     private val _lastSyncTime = MutableStateFlow(0L)
     val lastSyncTime: StateFlow<Long> = _lastSyncTime
 
@@ -35,6 +38,7 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
             _tmdbApiKey.value = repository.tmdbApiKeyFlow.first()
             _useVlcPlayer.value = repository.useVlcPlayerFlow.first()
             _proxyUrl.value = repository.proxyUrlFlow.first()
+            _dnsUrl.value = repository.dnsUrlFlow.first()
             _lastSyncTime.value = repository.lastSyncTimeFlow.first()
             
             repository.watchHistoryFlow.collect { history ->
@@ -61,6 +65,11 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     fun saveProxyUrl(url: String) {
         _proxyUrl.value = url
         viewModelScope.launch { repository.saveProxyUrl(url) }
+    }
+
+    fun saveDnsUrl(url: String) {
+        _dnsUrl.value = url
+        viewModelScope.launch { repository.saveDnsUrl(url) }
     }
 
     fun saveLastSyncTime(time: Long) {

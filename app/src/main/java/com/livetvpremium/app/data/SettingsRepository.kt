@@ -23,6 +23,7 @@ class SettingsRepository(private val context: Context) {
         val TMDB_API_KEY = stringPreferencesKey("tmdb_api_key")
         val USE_VLC_PLAYER = booleanPreferencesKey("use_vlc_player")
         val PROXY_URL = stringPreferencesKey("proxy_url")
+        val DNS_URL = stringPreferencesKey("dns_url")
         val LAST_SYNC_TIME = androidx.datastore.preferences.core.longPreferencesKey("last_sync_time")
         val WATCH_HISTORY = stringPreferencesKey("watch_history")
     }
@@ -42,6 +43,10 @@ class SettingsRepository(private val context: Context) {
 
     val proxyUrlFlow: Flow<String> = context.dataStore.data.map { preferences ->
         preferences[PROXY_URL] ?: ""
+    }
+
+    val dnsUrlFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[DNS_URL] ?: ""
     }
     
     val lastSyncTimeFlow: Flow<Long> = context.dataStore.data.map { preferences ->
@@ -71,6 +76,10 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun saveProxyUrl(url: String) {
         context.dataStore.edit { preferences -> preferences[PROXY_URL] = url }
+    }
+
+    suspend fun saveDnsUrl(url: String) {
+        context.dataStore.edit { preferences -> preferences[DNS_URL] = url }
     }
     
     suspend fun saveLastSyncTime(time: Long) {

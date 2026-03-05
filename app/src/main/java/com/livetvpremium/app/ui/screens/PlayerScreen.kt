@@ -35,6 +35,12 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.extractor.DefaultExtractorsFactory
 import androidx.media3.extractor.ts.DefaultTsPayloadReaderFactory
+import androidx.media3.datasource.okhttp.OkHttpDataSource
+import okhttp3.OkHttpClient
+import okhttp3.Dns
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.dnsoverhttps.DnsOverHttps
+import java.net.InetAddress
 import com.livetvpremium.app.ui.viewmodel.SettingsViewModel
 
 @OptIn(UnstableApi::class)
@@ -96,6 +102,7 @@ fun PlayerScreen(
             var exoPlayer by remember { mutableStateOf<ExoPlayer?>(null) }
             val watchHistory by settingsViewModel.watchHistory.collectAsState()
             val proxyUrl by settingsViewModel.proxyUrl.collectAsState()
+            val dnsUrl by settingsViewModel.dnsUrl.collectAsState()
             
             val finalUrl = remember(url, proxyUrl) {
                 if (proxyUrl.isNotBlank()) {
@@ -157,10 +164,46 @@ fun PlayerScreen(
                 val trackSelector = DefaultTrackSelector(context).apply {
                     setParameters(buildUponParameters().setPreferredAudioLanguage("it"))
                 }
+
+                val okHttpClient = OkHttpClient.Builder().apply {
+                    val customDns = if (dnsUrl.isNotBlank()) {
+                        try {
+                            val bootstrapClient = OkHttpClient.Builder().build()
+                            when {
+                                dnsUrl == "1.1.1.1" || dnsUrl == "1.0.0.1" -> {
+                                    DnsOverHttps.Builder().client(bootstrapClient)
+                                        .url("https://cloudflare-dns.com/dns-query".toHttpUrl())
+                                        .bootstrapDnsHosts(listOf(InetAddress.getByName("1.1.1.1")))
+                                        .build()
+                                }
+                                dnsUrl == "8.8.8.8" || dnsUrl == "8.8.4.4" -> {
+                                    DnsOverHttps.Builder().client(bootstrapClient)
+                                        .url("https://dns.google/dns-query".toHttpUrl())
+                                        .bootstrapDnsHosts(listOf(InetAddress.getByName("8.8.8.8")))
+                                        .build()
+                                }
+                                dnsUrl.startsWith("http") -> {
+                                    DnsOverHttps.Builder().client(bootstrapClient)
+                                        .url(dnsUrl.toHttpUrl())
+                                        .build()
+                                }
+                                else -> Dns.SYSTEM
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            Dns.SYSTEM
+                        }
+                    } else {
+                        Dns.SYSTEM
+                    }
+                    dns(customDns)
+                }
+                .followRedirects(true)
+                .followSslRedirects(true)
+                .build()
                 
-                val httpDataSourceFactory = DefaultHttpDataSource.Factory()
+                val httpDataSourceFactory = OkHttpDataSource.Factory(okHttpClient)
                     .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-                    .setAllowCrossProtocolRedirects(true)
                     
                 val dataSourceFactory = DefaultDataSource.Factory(context, httpDataSourceFactory)
                 
