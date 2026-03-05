@@ -3,7 +3,9 @@ package com.livetvpremium.app.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.livetvpremium.app.model.M3UItem
+import com.livetvpremium.app.model.EpgProgram
 import com.livetvpremium.app.repository.M3UParser
+import com.livetvpremium.app.repository.EpgParser
 import com.livetvpremium.app.repository.TmdbRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -42,6 +44,10 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
     val liveGroups = MutableStateFlow<List<String>>(emptyList())
     val filmGroups = MutableStateFlow<List<String>>(emptyList())
     val serieGroups = MutableStateFlow<List<String>>(emptyList())
+
+    private val epgParser = EpgParser()
+    private val _epgData = MutableStateFlow<Map<String, List<EpgProgram>>>(emptyMap())
+    val epgData: StateFlow<Map<String, List<EpgProgram>>> = _epgData
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
@@ -209,6 +215,20 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
                 _serieItems.value = parsedSerie
                 serieGroups.value = parsedSerie.map { it.groupTitle }.distinct().sorted()
 
+                // EPG
+                _syncState.value = SyncState.Loading(0.95f, "Caricamento Guida TV (EPG)...")
+                try {
+                    val epgFile = getPlaylistFile("epg.xml", isCacheValid, null, context,
+                        customUrl = "https://raw.githubusercontent.com/darietto17/TV/refs/heads/main/epg.xml")
+                    if (epgFile != null && epgFile.exists() && epgFile.length() > 0) {
+                        val parsed = epgFile.inputStream().use { epgParser.parse(it) }
+                        _epgData.value = parsed
+                    }
+                } catch (e: Exception) {
+                    // EPG failure is non-fatal, just log
+                    e.printStackTrace()
+                }
+
                 // Mark success
                 _syncState.value = SyncState.Success(parsedLive + parsedFilm + parsedSerie) // Returning all just to satisfy the old Success signature, will refactor UI later.
             } catch (e: Exception) {
@@ -217,7 +237,13 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
         }
     }
 
-    private suspend fun getPlaylistFile(filename: String, useCache: Boolean, token: String?, context: android.content.Context): java.io.File? {
+    private suspend fun getPlaylistFile(
+        filename: String,
+        useCache: Boolean,
+        token: String?,
+        context: android.content.Context,
+        customUrl: String? = null
+    ): java.io.File? {
         return withContext(Dispatchers.IO) {
             val file = java.io.File(context.cacheDir, filename)
             if (useCache && file.exists() && file.length() > 0) {
@@ -225,10 +251,10 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
             }
             
             // Need to download
-            val url = "https://raw.githubusercontent.com/darietto17/LiveTvPremium/refs/heads/master/$filename"
+            val url = customUrl ?: "https://raw.githubusercontent.com/darietto17/LiveTvPremium/refs/heads/master/$filename"
             val connection = URL(url).openConnection() as HttpsURLConnection
-            connection.connectTimeout = 10000
-            connection.readTimeout = 10000
+            connection.connectTimeout = 30000
+            connection.readTimeout = 30000
             
             if (!token.isNullOrEmpty()) {
                 connection.setRequestProperty("Authorization", "token $token")
@@ -254,6 +280,18 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
         cal1.timeInMillis = timestamp
         return cal1.get(java.util.Calendar.YEAR) == cal2.get(java.util.Calendar.YEAR) &&
                cal1.get(java.util.Calendar.DAY_OF_YEAR) == cal2.get(java.util.Calendar.DAY_OF_YEAR)
+    }
+
+    fun getCurrentProgram(tvgId: String): EpgProgram? {
+        val now = System.currentTimeMillis()
+        val programs = _epgData.value[tvgId] ?: return null
+        return programs.firstOrNull { now in it.startTime until it.stopTime }
+    }
+
+    fun getUpcomingPrograms(tvgId: String, limit: Int = 3): List<EpgProgram> {
+        val now = System.currentTimeMillis()
+        val programs = _epgData.value[tvgId] ?: return emptyList()
+        return programs.filter { it.stopTime > now }.take(limit)
     }
 
     private val _actionState = MutableStateFlow<String>("")

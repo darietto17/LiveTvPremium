@@ -1,85 +1,98 @@
 package com.livetvpremium.app.repository
 
-import android.util.Xml
 import com.livetvpremium.app.model.EpgProgram
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.xmlpull.v1.XmlPullParser
+import org.xmlpull.v1.XmlPullParserFactory
 import java.io.InputStream
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 class EpgParser {
 
-    suspend fun parse(inputStream: InputStream): List<EpgProgram> = withContext(Dispatchers.Default) {
-        val programs = mutableListOf<EpgProgram>()
-        
-        try {
-            val parser = Xml.newPullParser()
-            parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
-            parser.setInput(inputStream, null)
-            
-            var eventType = parser.eventType
-            var currentProgram: EpgProgram? = null
-            var channelId = ""
-            var start = ""
-            var stop = ""
-            var title = ""
-            var description = ""
-            
-            var currentTag = ""
+    private val dateFormat = SimpleDateFormat("yyyyMMddHHmmss Z", Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
 
-            while (eventType != XmlPullParser.END_DOCUMENT) {
-                when (eventType) {
-                    XmlPullParser.START_TAG -> {
-                        currentTag = parser.name
-                        if (currentTag == "programme") {
-                            channelId = parser.getAttributeValue(null, "channel") ?: ""
-                            start = parser.getAttributeValue(null, "start") ?: ""
-                            stop = parser.getAttributeValue(null, "stop") ?: ""
-                            title = ""
-                            description = ""
+    suspend fun parse(inputStream: InputStream): Map<String, List<EpgProgram>> = withContext(Dispatchers.Default) {
+        val programs = mutableMapOf<String, MutableList<EpgProgram>>()
+
+        val factory = XmlPullParserFactory.newInstance()
+        factory.isNamespaceAware = false
+        val parser = factory.newPullParser()
+        parser.setInput(inputStream, "UTF-8")
+
+        var eventType = parser.eventType
+        var currentChannelId = ""
+        var currentStart = 0L
+        var currentStop = 0L
+        var currentTitle = ""
+        var currentSubtitle = ""
+        var currentDesc = ""
+        var inProgramme = false
+        var currentTag = ""
+
+        while (eventType != XmlPullParser.END_DOCUMENT) {
+            when (eventType) {
+                XmlPullParser.START_TAG -> {
+                    val tagName = parser.name
+                    if (tagName == "programme") {
+                        inProgramme = true
+                        currentChannelId = parser.getAttributeValue(null, "channel") ?: ""
+                        val startStr = parser.getAttributeValue(null, "start") ?: ""
+                        val stopStr = parser.getAttributeValue(null, "stop") ?: ""
+                        currentStart = parseDate(startStr)
+                        currentStop = parseDate(stopStr)
+                        currentTitle = ""
+                        currentSubtitle = ""
+                        currentDesc = ""
+                    } else if (inProgramme) {
+                        currentTag = tagName
+                    }
+                }
+                XmlPullParser.TEXT -> {
+                    if (inProgramme) {
+                        val text = parser.text?.trim() ?: ""
+                        when (currentTag) {
+                            "title" -> currentTitle = text
+                            "sub-title" -> currentSubtitle = text
+                            "desc" -> currentDesc = text
                         }
                     }
-                    XmlPullParser.TEXT -> {
-                        val text = parser.text.trim()
-                        if (text.isNotEmpty()) {
-                            when (currentTag) {
-                                "title" -> title = text
-                                "desc" -> description = text
-                            }
-                        }
-                    }
-                    XmlPullParser.END_TAG -> {
-                        if (parser.name == "programme") {
-                            programs.add(
-                                EpgProgram(
-                                    channelId = channelId,
-                                    title = title,
-                                    description = description,
-                                    startTime = start,
-                                    stopTime = stop
-                                )
+                }
+                XmlPullParser.END_TAG -> {
+                    if (parser.name == "programme" && inProgramme) {
+                        inProgramme = false
+                        if (currentChannelId.isNotEmpty() && currentTitle.isNotEmpty()) {
+                            val program = EpgProgram(
+                                channelId = currentChannelId,
+                                title = currentTitle,
+                                subtitle = currentSubtitle,
+                                description = currentDesc,
+                                startTime = currentStart,
+                                stopTime = currentStop
                             )
+                            programs.getOrPut(currentChannelId) { mutableListOf() }.add(program)
                         }
+                        currentTag = ""
+                    } else if (inProgramme) {
                         currentTag = ""
                     }
                 }
-                eventType = parser.next()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
+            eventType = parser.next()
         }
-        
-        programs
+
+        // Sort each channel's programs by start time
+        programs.mapValues { (_, list) -> list.sortedBy { it.startTime } }
     }
 
-    // Helper to format XMLTV dates: 20240304201333 +0100
-    fun parseEpgDate(dateStr: String): Long {
+    private fun parseDate(dateStr: String): Long {
         return try {
-            val format = SimpleDateFormat("yyyyMMddHHmmss Z", Locale.getDefault())
-            format.parse(dateStr)?.time ?: 0L
+            // Format: "20260306070300 +0000"
+            dateFormat.parse(dateStr)?.time ?: 0L
         } catch (e: Exception) {
             0L
         }

@@ -491,9 +491,24 @@ fun HomeScreen(
                                             maxLines = 1,
                                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                             modifier = Modifier
-                                                .padding(8.dp)
+                                                .padding(start = 8.dp, end = 8.dp, top = 8.dp)
                                                 .fillMaxWidth()
                                         )
+                                        if (categoryType == "live") {
+                                            val currentProgram = viewModel.getCurrentProgram(item.tvgId)
+                                            if (currentProgram != null) {
+                                                Text(
+                                                    text = "📺 ${currentProgram.title}",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    maxLines = 1,
+                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                                    modifier = Modifier
+                                                        .padding(start = 8.dp, end = 8.dp, bottom = 4.dp)
+                                                        .fillMaxWidth()
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
