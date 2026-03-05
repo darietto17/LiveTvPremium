@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.livetvpremium.app.model.M3UItem
 import com.livetvpremium.app.model.EpgProgram
+import com.livetvpremium.app.model.GitHubRelease
 import com.livetvpremium.app.repository.M3UParser
 import com.livetvpremium.app.repository.EpgParser
 import com.livetvpremium.app.repository.TmdbRepository
@@ -19,6 +20,11 @@ import kotlinx.coroutines.withContext
 import java.net.URL
 import java.net.HttpURLConnection
 import javax.net.ssl.HttpsURLConnection
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.decodeFromString
+import android.content.Intent
+import androidx.core.content.FileProvider
+import android.os.Build
 
 sealed class SyncState {
     object Idle : SyncState()
@@ -54,6 +60,12 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
 
     private val _searchResults = MutableStateFlow<List<M3UItem>>(emptyList())
     val searchResults: StateFlow<List<M3UItem>> = _searchResults
+
+    private val _latestRelease = MutableStateFlow<GitHubRelease?>(null)
+    val latestRelease: StateFlow<GitHubRelease?> = _latestRelease
+
+    private val _updateLoading = MutableStateFlow(false)
+    val updateLoading: StateFlow<Boolean> = _updateLoading
 
     fun search(query: String) {
         _searchQuery.value = query
@@ -378,4 +390,86 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
     private fun defaultCategories() = listOf(
         "Intrattenimento", "Sport", "Cinema", "Documentari", "Bambini", "Musica", "News", "Eventi Live", "Altri"
     )
+
+    fun checkForUpdates(context: android.content.Context, showFeedback: Boolean = false) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _updateLoading.value = true
+            try {
+                val url = URL("https://api.github.com/repos/darietto17/LiveTvPremium/releases/latest")
+                val connection = url.openConnection() as HttpsURLConnection
+                connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
+                connection.connectTimeout = 10000
+                connection.readTimeout = 10000
+
+                if (connection.responseCode == 200) {
+                    val jsonString = connection.inputStream.bufferedReader().use { it.readText() }
+                    val release = Json { ignoreUnknownKeys = true }.decodeFromString<GitHubRelease>(jsonString)
+                    
+                    val pInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        context.packageManager.getPackageInfo(context.packageName, android.content.pm.PackageManager.PackageInfoFlags.of(0))
+                    } else {
+                        context.packageManager.getPackageInfo(context.packageName, 0)
+                    }
+                    val currentVersion = pInfo.versionName ?: "0.0.0"
+                    
+                    if (isNewerVersion(release.tagName, currentVersion)) {
+                        _latestRelease.value = release
+                    } else if (showFeedback) {
+                        _actionState.value = "L'app è già aggiornata (v$currentVersion)"
+                    }
+                }
+            } catch (e: Exception) {
+                if (showFeedback) _actionState.value = "Errore check update: ${e.message}"
+            } finally {
+                _updateLoading.value = false
+            }
+        }
+    }
+
+    private fun isNewerVersion(latest: String, current: String): Boolean {
+        val l = latest.replace("v", "").split(".").mapNotNull { it.toIntOrNull() }
+        val c = current.replace("v", "").split(".").mapNotNull { it.toIntOrNull() }
+        
+        for (i in 0 until minOf(l.size, c.size)) {
+            if (l[i] > c[i]) return true
+            if (l[i] < c[i]) return false
+        }
+        return l.size > c.size
+    }
+
+    fun downloadAndInstallUpdate(context: android.content.Context, downloadUrl: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _actionState.value = "Download aggiornamento in corso..."
+            try {
+                val file = java.io.File(context.getExternalFilesDir(null), "update.apk")
+                val url = URL(downloadUrl)
+                val connection = url.openConnection() as HttpsURLConnection
+                connection.connectTimeout = 30000
+                connection.readTimeout = 30000
+
+                connection.inputStream.use { input ->
+                    file.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+
+                _actionState.value = "Avvio installazione..."
+                
+                val uri = FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.fileprovider",
+                    file
+                )
+                
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, "application/vnd.android.package-archive")
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+                }
+                context.startActivity(intent)
+                
+            } catch (e: Exception) {
+                _actionState.value = "Errore download: ${e.message}"
+            }
+        }
+    }
 }

@@ -20,6 +20,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Button
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -68,6 +70,7 @@ fun HomeScreen(
     onNavigateToSearch: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val liveGroups by viewModel.liveGroups.collectAsState()
     val filmGroups by viewModel.filmGroups.collectAsState()
     val serieGroups by viewModel.serieGroups.collectAsState()
@@ -99,9 +102,12 @@ fun HomeScreen(
     val bottomBarFocusRequester = remember { FocusRequester() }
     val contentFocusRequester = remember { FocusRequester() }
     
-    // Initial focus request for TV
+    val latestRelease by viewModel.latestRelease.collectAsState()
+    
+    // Initial focus request for TV and update check
     LaunchedEffect(Unit) {
         bottomBarFocusRequester.requestFocus()
+        viewModel.checkForUpdates(context)
     }
 
     Scaffold(
@@ -599,6 +605,33 @@ fun HomeScreen(
                     liveChannelToPlay = null
                 }) {
                     Text("Diretto (ISP)")
+                }
+            }
+        )
+    }
+
+    latestRelease?.let { release ->
+        AlertDialog(
+            onDismissRequest = { /* Don't dismiss update on click outside */ },
+            title = { Text("Aggiornamento Disponibile! 🚀", fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text("È disponibile una nuova versione: ${release.tagName}")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(release.body.take(200) + if (release.body.length > 200) "..." else "", fontSize = 12.sp)
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val apkAsset = release.assets.find { it.name.endsWith(".apk") } ?: release.assets.firstOrNull()
+                    apkAsset?.let { viewModel.downloadAndInstallUpdate(context, it.downloadUrl) }
+                }) {
+                    Text("Scarica e Installa")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { /* Could add a ignore flag later */ }) {
+                    Text("Dopo")
                 }
             }
         )

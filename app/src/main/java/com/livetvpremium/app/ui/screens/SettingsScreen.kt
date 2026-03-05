@@ -17,6 +17,8 @@ import com.livetvpremium.app.ui.viewmodel.SyncState
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import android.os.Build
+import androidx.compose.ui.text.style.TextOverflow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -132,6 +134,59 @@ fun SettingsScreen(
                 }
                 
                 if (githubToken.isNotBlank()) {
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    
+                    Text("Aggiornamenti App", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    
+                    val currentVersion = remember { 
+                        try {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                context.packageManager.getPackageInfo(context.packageName, android.content.pm.PackageManager.PackageInfoFlags.of(0)).versionName ?: "0.0.0"
+                            } else {
+                                context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "0.0.0"
+                            }
+                        } catch (e: Exception) { "0.0.0" }
+                    }
+                    val latestRelease by mainViewModel.latestRelease.collectAsState()
+                    val updateLoading by mainViewModel.updateLoading.collectAsState()
+
+                    Text("Versione attuale: v$currentVersion", fontSize = 14.sp)
+                    
+                    Button(
+                        onClick = { mainViewModel.checkForUpdates(context, showFeedback = true) },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !updateLoading
+                    ) {
+                        if (updateLoading) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                        } else {
+                            Text("Verifica Aggiornamenti")
+                        }
+                    }
+
+                    latestRelease?.let { release ->
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text("Nuova versione disponibile: ${release.tagName}", fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(release.body, fontSize = 12.sp, maxLines = 5, overflow = TextOverflow.Ellipsis)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Button(
+                                    onClick = { 
+                                        val apkAsset = release.assets.find { it.name.endsWith(".apk") } ?: release.assets.firstOrNull()
+                                        apkAsset?.let { mainViewModel.downloadAndInstallUpdate(context, it.downloadUrl) }
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Scarica e Installa ${release.tagName}")
+                                }
+                            }
+                        }
+                    }
+
                     Divider(modifier = Modifier.padding(vertical = 8.dp))
                     
                     Text("Scraper (Richiede GitHub Token)", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
