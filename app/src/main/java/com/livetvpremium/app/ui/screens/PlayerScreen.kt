@@ -26,6 +26,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
@@ -159,9 +160,20 @@ fun PlayerScreen(
                 val mediaSourceFactory = DefaultMediaSourceFactory(context, extractorsFactory)
                     .setDataSourceFactory(dataSourceFactory)
                 
+                val loadControl = DefaultLoadControl.Builder()
+                    .setBufferDurationsMs(
+                        30_000, // Min buffer (increased from default 15s to 30s)
+                        60_000, // Max buffer (60s)
+                        5_000,  // Buffer for playback start (5s)
+                        5_000   // Buffer for playback after re-buffer (5s)
+                    )
+                    .setBackBuffer(10_000, true) // Keep 10s of back buffer for seeking
+                    .build()
+
                 val player = ExoPlayer.Builder(context)
                     .setTrackSelector(trackSelector)
                     .setMediaSourceFactory(mediaSourceFactory)
+                    .setLoadControl(loadControl)
                     .build()
                     .apply {
                         val mediaItemBuilder = MediaItem.Builder().setUri(Uri.parse(url))
