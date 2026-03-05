@@ -42,7 +42,7 @@ class SettingsRepository(private val context: Context) {
     }
 
     val proxyUrlFlow: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[PROXY_URL] ?: ""
+        preferences[PROXY_URL] ?: "https://eproxy.rrinformatica.cloud/proxy/"
     }
 
     val dnsUrlFlow: Flow<String> = context.dataStore.data.map { preferences ->

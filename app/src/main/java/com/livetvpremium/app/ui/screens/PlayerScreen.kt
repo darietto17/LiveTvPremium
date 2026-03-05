@@ -27,6 +27,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.DefaultLoadControl
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
@@ -54,6 +55,10 @@ import org.videolan.libvlc.LibVLC
 import org.videolan.libvlc.Media
 import org.videolan.libvlc.MediaPlayer
 import org.videolan.libvlc.util.VLCVideoLayout
+import android.webkit.WebView
+import android.webkit.WebChromeClient
+import android.webkit.WebViewClient
+import android.webkit.WebSettings
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -160,14 +165,9 @@ fun PlayerScreen(
                 modifier = Modifier.fillMaxSize()
             )
         } else {
-            // ExoPlayer Implementation
-            var exoPlayer by remember { mutableStateOf<ExoPlayer?>(null) }
-            val watchHistory by settingsViewModel.watchHistory.collectAsState()
             val proxyUrl by settingsViewModel.proxyUrl.collectAsState()
-            val dnsUrl by settingsViewModel.dnsUrl.collectAsState()
-            
             val finalUrl = remember(url, proxyUrl) {
-                if (proxyUrl.isNotBlank()) {
+                if (proxyUrl.isNotBlank() && !url.contains("vixsrc.to")) {
                     val base = if (proxyUrl.endsWith("/")) proxyUrl else "$proxyUrl/"
                     try {
                         val encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8.toString())
@@ -179,6 +179,50 @@ fun PlayerScreen(
                     url
                 }
             }
+            
+            val isWebEmbed = finalUrl.contains("vixsrc.to", ignoreCase = true)
+
+            if (isWebEmbed) {
+                AndroidView(
+                    factory = { ctx ->
+                        WebView(ctx).apply {
+                            settings.apply {
+                                javaScriptEnabled = true
+                                domStorageEnabled = true
+                                mediaPlaybackRequiresUserGesture = false
+                                userAgentString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                                useWideViewPort = true
+                                loadWithOverviewMode = true
+                                setSupportMultipleWindows(false)
+                                mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                            }
+                            webChromeClient = WebChromeClient()
+                            webViewClient = WebViewClient()
+                            
+                            setBackgroundColor(0) // Black background
+                            
+                            // History tracking for WebEmbeds
+                            val historyItem = com.livetvpremium.app.model.WatchHistoryItem(
+                                title = title,
+                                originalUrl = finalUrl,
+                                groupName = groupName,
+                                posterUrl = posterUrl,
+                                progressMs = 0L,
+                                durationMs = 0L,
+                                timestamp = System.currentTimeMillis()
+                            )
+                            settingsViewModel.addOrUpdateWatchHistoryItem(historyItem)
+                            
+                            loadUrl(finalUrl)
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                // ExoPlayer Implementation
+                var exoPlayer by remember { mutableStateOf<ExoPlayer?>(null) }
+                val watchHistory by settingsViewModel.watchHistory.collectAsState()
+                val dnsUrl by settingsViewModel.dnsUrl.collectAsState()
 
             val saveHistory: (Long, Long) -> Unit = remember(finalUrl, title, groupName, posterUrl) {
                 { currentPos, duration -> 
@@ -219,7 +263,7 @@ fun PlayerScreen(
                                 progressMs = currentPos,
                                 durationMs = duration,
                                 timestamp = System.currentTimeMillis()
-                            )
+                                )
                             settingsViewModel.addOrUpdateWatchHistoryItem(historyItem)
                         }
                     }
@@ -494,4 +538,5 @@ fun PlayerScreen(
             }
         }
     }
+}
 }
