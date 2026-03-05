@@ -424,7 +424,7 @@ class TVM3UGenerator:
         for season_num in sorted(episodes.keys()):
             for episode_num in episodes[season_num]:
                 # Create vixsrc.to link for episode
-                episode_url = f"{self.vixsrc_base}/{tmdb_id}/{season_num}/{episode_num}?lang=it/series/"
+                episode_url = f"{self.vixsrc_base}/{tmdb_id}/{season_num}/{episode_num}?lang=it"
                 
                 # Create title with series info, season, episode, and stars
                 display_title = f"{series_name} S{season_num:02d} E{episode_num:02d}"

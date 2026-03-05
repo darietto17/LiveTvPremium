@@ -26,6 +26,7 @@ import kotlinx.serialization.decodeFromString
 import android.content.Intent
 import androidx.core.content.FileProvider
 import android.os.Build
+import java.util.zip.GZIPInputStream
 
 sealed class SyncState {
     object Idle : SyncState()
@@ -210,9 +211,10 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
                 val categoriesDeferred = async { fetchOrderedCategories(githubToken, context) }
 
                 // Process playlists in parallel
-                val liveDeferred = async { loadPlaylistWithCache("lista.m3u", isCacheValid, githubToken, context) }
-                val filmDeferred = async { loadPlaylistWithCache("film.m3u", isCacheValid, githubToken, context) }
-                val serieDeferred = async { loadPlaylistWithCache("serie.m3u", isCacheValid, githubToken, context) }
+                // Process playlists in parallel - Using .gz to save bandwidth
+                val liveDeferred = async { loadPlaylistWithCache("lista.m3u", isCacheValid, githubToken, context, customUrl = "https://raw.githubusercontent.com/darietto17/LiveTvPremium/refs/heads/master/lista.m3u.gz") }
+                val filmDeferred = async { loadPlaylistWithCache("film.m3u", isCacheValid, githubToken, context, customUrl = "https://raw.githubusercontent.com/darietto17/LiveTvPremium/refs/heads/master/film.m3u.gz") }
+                val serieDeferred = async { loadPlaylistWithCache("serie.m3u", isCacheValid, githubToken, context, customUrl = "https://raw.githubusercontent.com/darietto17/LiveTvPremium/refs/heads/master/serie.m3u.gz") }
 
                 val orderedCategories = categoriesDeferred.await()
                 
@@ -257,7 +259,8 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
         filename: String,
         useCache: Boolean,
         token: String?,
-        context: android.content.Context
+        context: android.content.Context,
+        customUrl: String? = null
     ): List<M3UItem> = withContext(Dispatchers.IO) {
         val jsonCacheFile = java.io.File(context.cacheDir, "$filename.cache.json")
         val m3uFile = java.io.File(context.cacheDir, filename)
@@ -270,7 +273,7 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
         }
 
         // Otherwise, download/get M3U and parse
-        val downloadedFile = getPlaylistFile(filename, useCache, token, context)
+        val downloadedFile = getPlaylistFile(filename, useCache, token, context, customUrl)
         val items = downloadedFile?.inputStream()?.use { m3uParser.parse(it) } ?: emptyList()
         
         // Save to JSON cache for next time
@@ -311,7 +314,10 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
                return@withContext null // File might not exist yet on repo
             }
             
-            connection.inputStream.use { input ->
+            val isGzip = (customUrl ?: url).endsWith(".gz")
+            
+            connection.inputStream.use { rawInput ->
+                val input = if (isGzip) GZIPInputStream(rawInput) else rawInput
                 file.outputStream().use { output ->
                     input.copyTo(output)
                 }
