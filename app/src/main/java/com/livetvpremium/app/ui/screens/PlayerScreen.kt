@@ -254,8 +254,16 @@ fun PlayerScreen(
                     factory = { ctx ->
                         object : PlayerView(ctx) {
                             override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-                                // Se il pannello dei controlli di ExoPlayer non è visibile, alla prima pressione di un tasto
-                                // (D-PAD o ENTER) vogliamo semplicemente mostrare il pannello senza eseguire l'azione
+                                // BACK button handling: if controller is shown, hide it first.
+                                if (event.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_DOWN) {
+                                    if (isControllerFullyVisible) {
+                                        hideController()
+                                        return true
+                                    }
+                                    // If controller is hidden, let the default behavior (exit screen) handle it
+                                }
+
+                                // If the panel is NOT visible, show it on any D-PAD or ENTER press
                                 if (!isControllerFullyVisible) {
                                     val actionCode = event.keyCode
                                     if (actionCode == KeyEvent.KEYCODE_DPAD_UP ||
@@ -267,26 +275,36 @@ fun PlayerScreen(
                                     ) {
                                         if (event.action == KeyEvent.ACTION_DOWN) {
                                             showController()
+                                            // Request focus for the player view to ensure D-PAD navigation starts within the controller
+                                            requestFocus()
                                         }
-                                        return true // Evento consumato: mostriamo solo l'UI
+                                        return true
                                     }
                                 }
 
-                                // Gestione esplicita dei tasti Media per il play/pausa del telecomando
+                                // Explicit Media Keys handling (PLAY/PAUSE/TOGGLE)
                                 if (event.action == KeyEvent.ACTION_DOWN) {
                                     when (event.keyCode) {
-                                        KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
-                                            if (player.isPlaying) player.pause() else player.play()
-                                            showController()
-                                            return true
+                                        KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 
+                                        KeyEvent.KEYCODE_DPAD_CENTER, 
+                                        KeyEvent.KEYCODE_ENTER -> {
+                                            // If controller is visible, we let the focused button handle the click
+                                            // But if we're just playing/pausing via center button on the video itself:
+                                            if (isControllerFullyVisible) {
+                                                return super.dispatchKeyEvent(event)
+                                            } else {
+                                                if (player.isPlaying) player.pause() else player.play()
+                                                showController()
+                                                return true
+                                            }
                                         }
                                         KeyEvent.KEYCODE_MEDIA_PLAY -> {
-                                            player.play()
+                                            if (!player.isPlaying) player.play()
                                             showController()
                                             return true
                                         }
                                         KeyEvent.KEYCODE_MEDIA_PAUSE -> {
-                                            player.pause()
+                                            if (player.isPlaying) player.pause()
                                             showController()
                                             return true
                                         }
