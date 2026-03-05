@@ -5,7 +5,7 @@ https://example.com.m3u8
 #EXTINF:-1 tvg-id="italyserieclatinavssorrento" tvg-name="Soccer | Italy - Serie C : Latina vs Sorrento (19:00)" tvg-logo="https://raw.githubusercontent.com/darietto17/TV/main/logos/Latina_vs_Sorrento.png" group-title="Eventi Live DLHD",Soccer | Italy - Serie C : Latina vs Sorrento (19:00)
 https://dlhd.dad/watch.php?id=1
 
-#EXTINF:-1 tvg-id="italyseriecvirtuscasaranovssiracusa" tvg-name="Soccer | Italy - Serie C : Virtus Casarano vs Siracusa (19:00)" tvg-logo="https://static-www.comune.siracusa.it/wp-content/uploads/2024/01/cropped-favicon-1.png" group-title="Eventi Live DLHD",Soccer | Italy - Serie C : Virtus Casarano vs Siracusa (19:00)
+#EXTINF:-1 tvg-id="italyseriecvirtuscasaranovssiracusa" tvg-name="Soccer | Italy - Serie C : Virtus Casarano vs Siracusa (19:00)" tvg-logo="https://www.garabatos.biz/wp-content/uploads/2020/06/marina-cafe-siracusa-logo.png" group-title="Eventi Live DLHD",Soccer | Italy - Serie C : Virtus Casarano vs Siracusa (19:00)
 https://dlhd.dad/watch.php?id=4
 
 #EXTINF:-1 tvg-id="italyseriecpicernovsatalantaii" tvg-name="Soccer | Italy - Serie C : Picerno vs Atalanta II (19:00)" tvg-logo="https://raw.githubusercontent.com/darietto17/TV/main/logos/Picerno_vs_Atalanta II.png" group-title="Eventi Live DLHD",Soccer | Italy - Serie C : Picerno vs Atalanta II (19:00)
@@ -44,7 +44,7 @@ https://dlhd.dad/watch.php?id=10
 #EXTINF:-1 tvg-id="europeanchampionshipwomenbosniaampherzegovinawvsitalyw" tvg-name="Handball | European Championship Women : Bosnia &amp; Herzegovina W vs Italy W (21:00)" tvg-logo="https://raw.githubusercontent.com/darietto17/TV/main/logos/Bosnia &amp; Herzegovina W_vs_Italy W.png" group-title="Eventi Live DLHD",Handball | European Championship Women : Bosnia &amp; Herzegovina W vs Italy W (21:00)
 https://dlhd.dad/watch.php?id=460
 
-#EXTINF:-1 tvg-id="lahtiwomenshs130worldcupday1" tvg-name="Ski Jumping | Lahti | Women's HS 130 World Cup | Day 1 (16:00)" tvg-logo="https://amc-lahti.fi/wp-content/uploads/2024/10/Artboard-11-2-768x768.png" group-title="Eventi Live DLHD",Ski Jumping | Lahti | Women's HS 130 World Cup | Day 1 (16:00)
+#EXTINF:-1 tvg-id="lahtiwomenshs130worldcupday1" tvg-name="Ski Jumping | Lahti | Women's HS 130 World Cup | Day 1 (16:00)" tvg-logo="https://www.lahtilottery.com/img/logo.png" group-title="Eventi Live DLHD",Ski Jumping | Lahti | Women's HS 130 World Cup | Day 1 (16:00)
 https://dlhd.dad/watch.php?id=878
 
 #EXTINF:-1 tvg-id="europeanchampionshipsshahdagmixedrelay" tvg-name="Winter Sports | European Championships Shahdag | Mixed Relay (12:00)" tvg-logo="https://comitati.fisi.org/alpi-centrali/wp-content/uploads/sites/25/2024/08/Logo_ParcoStelvio_Biathlon.png" group-title="Eventi Live DLHD",Winter Sports | European Championships Shahdag | Mixed Relay (12:00)
