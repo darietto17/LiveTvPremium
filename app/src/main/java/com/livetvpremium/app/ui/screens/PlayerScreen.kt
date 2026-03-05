@@ -42,6 +42,11 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.dnsoverhttps.DnsOverHttps
 import java.net.InetAddress
 import java.net.URLEncoder
+import java.net.CookieHandler
+import java.net.CookieManager
+import java.net.CookiePolicy
+import java.util.concurrent.TimeUnit
+import okhttp3.JavaNetCookieJar
 import java.nio.charset.StandardCharsets
 import com.livetvpremium.app.ui.viewmodel.SettingsViewModel
 import org.videolan.libvlc.LibVLC
@@ -258,10 +263,11 @@ fun PlayerScreen(
                     }
                     dns(customDns)
                 }
-                .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-                .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-                .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-                .connectionPool(okhttp3.ConnectionPool(10, 5, java.util.concurrent.TimeUnit.MINUTES))
+                .connectTimeout(60, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(60, TimeUnit.SECONDS)
+                .connectionPool(okhttp3.ConnectionPool(15, 5, TimeUnit.MINUTES))
+                .cookieJar(JavaNetCookieJar(CookieManager().apply { setCookiePolicy(CookiePolicy.ACCEPT_ALL) }))
                 .followRedirects(true)
                 .followSslRedirects(true)
                 .retryOnConnectionFailure(true)
@@ -280,8 +286,7 @@ fun PlayerScreen(
                         DefaultTsPayloadReaderFactory.FLAG_DETECT_ACCESS_UNITS or
                         DefaultTsPayloadReaderFactory.FLAG_IGNORE_SPLICE_INFO_STREAM or
                         DefaultTsPayloadReaderFactory.FLAG_ENABLE_HDMV_DTS_AUDIO_STREAMS or
-                        (1 shl 6) or // FLAG_IGNORE_PCR in some versions
-                        (1 shl 3)    // FLAG_ALLOW_NON_CONSECUTIVE_PIDS in some versions
+                        (1 shl 3)    // FLAG_ALLOW_NON_CONSECUTIVE_PIDS
                     )
                     .setAdtsExtractorFlags(androidx.media3.extractor.ts.AdtsExtractor.FLAG_ENABLE_CONSTANT_BITRATE_SEEKING)
                     
@@ -294,12 +299,12 @@ fun PlayerScreen(
                              groupName.contains("tv", ignoreCase = true) ||
                              groupName.contains("channels", ignoreCase = true)
                              
-                val bufferForPlaybackMs = if (isLive) 5_000 else 2_500
-                val bufferAfterRebufferMs = if (isLive) 8_000 else 5_000
+                val bufferForPlaybackMs = if (isLive) 2_000 else 2_500
+                val bufferAfterRebufferMs = if (isLive) 4_000 else 5_000
                 
                 val loadControl = DefaultLoadControl.Builder()
                     .setBufferDurationsMs(
-                        if (isLive) 30_000 else 15_000, 
+                        if (isLive) 15_000 else 15_000, 
                         if (isLive) 60_000 else 50_000, 
                         bufferForPlaybackMs, 
                         bufferAfterRebufferMs
