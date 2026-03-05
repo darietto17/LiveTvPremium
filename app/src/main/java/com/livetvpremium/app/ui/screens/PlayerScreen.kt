@@ -19,8 +19,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
+import androidx.media3.common.MimeTypes
 import com.livetvpremium.app.ui.viewmodel.SettingsViewModel
 
 @OptIn(UnstableApi::class)
@@ -111,21 +113,40 @@ fun PlayerScreen(
                 val trackSelector = DefaultTrackSelector(context).apply {
                     setParameters(buildUponParameters().setPreferredAudioLanguage("it"))
                 }
-                val player = ExoPlayer.Builder(context).setTrackSelector(trackSelector).build().apply {
-                    val mediaItem = MediaItem.fromUri(Uri.parse(url))
-                    setMediaItem(mediaItem)
-                    
-                    if (isVod) {
-                        val existingHistory = watchHistory.find { it.originalUrl == url }
-                        if (existingHistory != null && existingHistory.progressMs > 0) {
-                            val startPosition = (existingHistory.progressMs - 5000L).coerceAtLeast(0L)
-                            seekTo(startPosition)
+                
+                val mediaSourceFactory = DefaultMediaSourceFactory(context)
+                
+                val player = ExoPlayer.Builder(context)
+                    .setTrackSelector(trackSelector)
+                    .setMediaSourceFactory(mediaSourceFactory)
+                    .build()
+                    .apply {
+                        val mediaItemBuilder = MediaItem.Builder().setUri(Uri.parse(url))
+                        
+                        // Help ExoPlayer identify M3U8 streams if they lack the correct extension or use proxy
+                        if (url.contains(".m3u8", ignoreCase = true) || groupName.contains("live", ignoreCase = true) || url.contains("proxy")) {
+                            mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
+                        } else if (url.contains(".ts", ignoreCase = true)) {
+                            mediaItemBuilder.setMimeType(MimeTypes.VIDEO_MP2T)
+                        } else if (url.contains(".mp4", ignoreCase = true)) {
+                            mediaItemBuilder.setMimeType(MimeTypes.VIDEO_MP4)
+                        } else if (url.contains(".mkv", ignoreCase = true)) {
+                            mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_MATROSKA)
                         }
+
+                        setMediaItem(mediaItemBuilder.build())
+                        
+                        if (isVod) {
+                            val existingHistory = watchHistory.find { it.originalUrl == url }
+                            if (existingHistory != null && existingHistory.progressMs > 0) {
+                                val startPosition = (existingHistory.progressMs - 5000L).coerceAtLeast(0L)
+                                seekTo(startPosition)
+                            }
+                        }
+                        
+                        prepare()
+                        playWhenReady = true
                     }
-                    
-                    prepare()
-                    playWhenReady = true
-                }
                 exoPlayer = player
                 
                 onDispose {
