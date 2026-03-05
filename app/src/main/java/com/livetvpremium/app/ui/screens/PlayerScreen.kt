@@ -41,6 +41,8 @@ import okhttp3.Dns
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.dnsoverhttps.DnsOverHttps
 import java.net.InetAddress
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import com.livetvpremium.app.ui.viewmodel.SettingsViewModel
 
 @OptIn(UnstableApi::class)
@@ -79,13 +81,15 @@ fun PlayerScreen(
     }
     
     val useVlcPlayer by settingsViewModel.useVlcPlayer.collectAsState()
-    val isVod = groupName.contains("Film", ignoreCase = true) || groupName.contains("Serie", ignoreCase = true)
+    val isVod = groupName.contains("Film", ignoreCase = true) || 
+                 groupName.contains("Serie", ignoreCase = true) ||
+                 groupName.contains("Cinema", ignoreCase = true) ||
+                 groupName.contains("Movies", ignoreCase = true) ||
+                 groupName.contains("VOD", ignoreCase = true)
 
     Box(modifier = modifier.fillMaxSize().background(Color.Black)) {
         if (useVlcPlayer) {
             // Placeholder for VLC Player implementation
-            // Need to setup LibVLC and org.videolan.libvlc.util.VLCVideoLayout
-            // We use a simple view for now
             AndroidView(
                 factory = { ctx ->
                     FrameLayout(ctx).apply {
@@ -106,9 +110,9 @@ fun PlayerScreen(
             
             val finalUrl = remember(url, proxyUrl) {
                 if (proxyUrl.isNotBlank()) {
-                    // Prepend proxy if configured, handle trailing slash
                     val base = if (proxyUrl.endsWith("/")) proxyUrl else "$proxyUrl/"
-                    "$base$url"
+                    val encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8.toString())
+                    "${base}manifest.m3u8?url=$encodedUrl"
                 } else {
                     url
                 }
@@ -203,6 +207,7 @@ fun PlayerScreen(
                 .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
                 .followRedirects(true)
                 .followSslRedirects(true)
+                .retryOnConnectionFailure(true)
                 .build()
                 
                 val httpDataSourceFactory = OkHttpDataSource.Factory(okHttpClient)
@@ -210,26 +215,37 @@ fun PlayerScreen(
                     
                 val dataSourceFactory = DefaultDataSource.Factory(context, httpDataSourceFactory)
                 
+                // Enhanced Extractors Factory for better IPTV compatibility
                 val extractorsFactory = DefaultExtractorsFactory()
                     .setConstantBitrateSeekingEnabled(true)
-                    .setTsExtractorFlags(DefaultTsPayloadReaderFactory.FLAG_ALLOW_NON_IDR_KEYFRAMES)
+                    .setTsExtractorFlags(
+                        DefaultTsPayloadReaderFactory.FLAG_ALLOW_NON_IDR_KEYFRAMES or
+                        DefaultTsPayloadReaderFactory.FLAG_DETECT_ACCESS_UNITS or
+                        DefaultTsPayloadReaderFactory.FLAG_IGNORE_SPLICE_INFO_STREAM or
+                        DefaultTsPayloadReaderFactory.FLAG_ENABLE_HDMV_DTS_AUDIO_STREAMS
+                    )
+                    .setAdtsExtractorFlags(androidx.media3.extractor.ts.AdtsExtractor.FLAG_ENABLE_CONSTANT_BITRATE_SEEKING)
                     
                 val mediaSourceFactory = DefaultMediaSourceFactory(context, extractorsFactory)
                     .setDataSourceFactory(dataSourceFactory)
                 
-                // Buffering Strategy (Phase 30)
-                val isLive = groupName.contains("live", ignoreCase = true)
-                val bufferForPlaybackMs = if (isLive) 15_000 else 5_000 // 15s for Live, 5s for VOD
+                val isLive = !isVod || 
+                             groupName.contains("live", ignoreCase = true) || 
+                             groupName.contains("diretta", ignoreCase = true) ||
+                             groupName.contains("tv", ignoreCase = true) ||
+                             groupName.contains("channels", ignoreCase = true)
+                             
+                val bufferForPlaybackMs = if (isLive) 15_000 else 5_000
                 
                 val loadControl = DefaultLoadControl.Builder()
                     .setBufferDurationsMs(
-                        30_000, // Min buffer (increased from default 15s to 30s)
-                        60_000, // Max buffer (60s)
-                        bufferForPlaybackMs,  // Initial buffer before start
-                        bufferForPlaybackMs   // Buffer after re-buffer
+                        30_000, 
+                        60_000, 
+                        bufferForPlaybackMs, 
+                        bufferForPlaybackMs
                     )
-                    .setPrioritizeTimeOverSizeThresholds(true) // Crucial for live stability
-                    .setBackBuffer(10_000, true) // Keep 10s of back buffer for seeking
+                    .setPrioritizeTimeOverSizeThresholds(true)
+                    .setBackBuffer(10_000, true)
                     .build()
 
                 val player = ExoPlayer.Builder(context)
@@ -240,25 +256,32 @@ fun PlayerScreen(
                     .apply {
                         val mediaItemBuilder = MediaItem.Builder().setUri(Uri.parse(finalUrl))
                         
-                        // Refined MIME type detection
-                        val hasM3u8Ext = finalUrl.contains(".m3u8", ignoreCase = true)
-                        val hasMp4Ext = finalUrl.contains(".mp4", ignoreCase = true)
-                        val hasTsExt = finalUrl.contains(".ts", ignoreCase = true)
-                        val hasMkvExt = finalUrl.contains(".mkv", ignoreCase = true)
+                        // Improved MIME type detection for IPTV streams
+                        val lowerUrl = finalUrl.lowercase()
+                        val isHls = lowerUrl.contains(".m3u8") || lowerUrl.contains("m3u8") || 
+                                    lowerUrl.contains("type=m3u8") || lowerUrl.contains("output=m3u8") || 
+                                    lowerUrl.contains("output=hls") || lowerUrl.contains("protocol=hls")
+                        val isTs = lowerUrl.contains(".ts") || lowerUrl.contains("ts") || 
+                                   lowerUrl.contains("type=ts") || lowerUrl.contains("output=ts") || 
+                                   lowerUrl.contains("output=mpegts") || lowerUrl.contains("mpegts")
+                        val isMp4 = lowerUrl.contains(".mp4") || lowerUrl.contains("type=mp4") || lowerUrl.contains("output=mp4")
+                        val isMkv = lowerUrl.contains(".mkv") || lowerUrl.contains("type=mkv") || lowerUrl.contains("output=mkv")
                         
                         when {
-                            hasM3u8Ext -> mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
-                            hasMp4Ext -> mediaItemBuilder.setMimeType(MimeTypes.VIDEO_MP4)
-                            hasTsExt -> mediaItemBuilder.setMimeType(MimeTypes.VIDEO_MP2T)
-                            hasMkvExt -> mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_MATROSKA)
-                            groupName.contains("live", ignoreCase = true) -> {
-                                // For Live channels without clear extension, assume HLS (most common)
-                                mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
+                            isHls -> mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
+                            isTs -> mediaItemBuilder.setMimeType(MimeTypes.VIDEO_MP2T)
+                            isMp4 -> mediaItemBuilder.setMimeType(MimeTypes.VIDEO_MP4)
+                            isMkv -> mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_MATROSKA)
+                            isLive -> {
+                                // For live, prefer HLS unless TS is explicitly mentioned in a clear way
+                                if (lowerUrl.contains("output=ts") || lowerUrl.contains("type=ts") || lowerUrl.endsWith(".ts")) {
+                                    mediaItemBuilder.setMimeType(MimeTypes.VIDEO_MP2T)
+                                } else {
+                                    mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
+                                }
                             }
                             else -> {
-                                // For VOD (Movies/Series) without clear extension, DO NOT force MimeType
-                                // and let ExoPlayer attempt auto-detection by sniffing the content.
-                                // This prevents "Input does not start with #EXTM3U" errors on progressive streams.
+                                // For VOD without extension, let ExoPlayer sniff but we've improved TS flags above
                             }
                         }
  
@@ -285,7 +308,6 @@ fun PlayerScreen(
                 }
             }
             
-            // Poll progress every 10 seconds to save state proactively
             LaunchedEffect(exoPlayer) {
                 while (true) {
                     kotlinx.coroutines.delay(10000)
@@ -320,16 +342,13 @@ fun PlayerScreen(
                     factory = { ctx ->
                         object : PlayerView(ctx) {
                             override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-                                // BACK button handling: if controller is shown, hide it first.
                                 if (event.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_DOWN) {
                                     if (isControllerFullyVisible) {
                                         hideController()
                                         return true
                                     }
-                                    // If controller is hidden, let the default behavior (exit screen) handle it
                                 }
 
-                                // If the panel is NOT visible, show it on any D-PAD or ENTER press
                                 if (!isControllerFullyVisible) {
                                     val actionCode = event.keyCode
                                     if (actionCode == KeyEvent.KEYCODE_DPAD_UP ||
@@ -341,21 +360,17 @@ fun PlayerScreen(
                                     ) {
                                         if (event.action == KeyEvent.ACTION_DOWN) {
                                             showController()
-                                            // Request focus for the player view to ensure D-PAD navigation starts within the controller
                                             requestFocus()
                                         }
                                         return true
                                     }
                                 }
 
-                                // Explicit Media Keys handling (PLAY/PAUSE/TOGGLE)
                                 if (event.action == KeyEvent.ACTION_DOWN) {
                                     when (event.keyCode) {
                                         KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 
                                         KeyEvent.KEYCODE_DPAD_CENTER, 
                                         KeyEvent.KEYCODE_ENTER -> {
-                                            // If controller is visible, we let the focused button handle the click
-                                            // But if we're just playing/pausing via center button on the video itself:
                                             if (isControllerFullyVisible) {
                                                 return super.dispatchKeyEvent(event)
                                             } else {
