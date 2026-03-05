@@ -2,11 +2,12 @@
 
 LiveTvPremium è un ecosistema completo per lo streaming IPTV premium, progettato nativamente per Android (Mobile & TV) e affiancato da un potente motore Python per la generazione e la classificazione dinamica delle liste M3U.
 
-## 🚀 Novità Release v1.1.0
+## 🚀 Novità Release v1.1.1 (Hotfix)
 
+- **Stop allo Standby (Wake Lock)**: Implementato `FLAG_KEEP_SCREEN_ON` per impedire al televisore di spegnersi durante la visione di lunghi contenuti.
+- **Vero Full Screen (Immersive Mode)**: Il player entra ora automaticamente in modalità immersiva nascondendo le barre di sistema.
+- **Fix Navigazione TV**: Migliorata la gestione del focus D-PAD per muoversi agevolmente tra i contenuti e le sezioni dell'app senza "blocchi".
 - **Guida TV (EPG) Ottimizzata**: Integrazione completa della guida programmi con un parser ad alte prestazioni che filtra i dati in tempo reale per minimizzare l'uso della RAM.
-- **"In onda ora"**: Visualizzazione immediata del programma corrente nelle anteprime dei canali live.
-- **Gestione Remota**: Avvio dei workflow di rigenerazione liste su GitHub direttamente dalle impostazioni dell'app.
 - **Hls Fallback**: Maggiore compatibilità con gli stream VOD (Film/Serie) tramite riconoscimento intelligente dei flussi HLS anche senza estensione esplicita.
 
 ## 🛠️ Architettura del Progetto
