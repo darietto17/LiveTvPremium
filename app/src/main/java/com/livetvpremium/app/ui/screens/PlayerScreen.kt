@@ -198,6 +198,9 @@ fun PlayerScreen(
                     }
                     dns(customDns)
                 }
+                .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
                 .followRedirects(true)
                 .followSslRedirects(true)
                 .build()
@@ -214,13 +217,18 @@ fun PlayerScreen(
                 val mediaSourceFactory = DefaultMediaSourceFactory(context, extractorsFactory)
                     .setDataSourceFactory(dataSourceFactory)
                 
+                // Buffering Strategy (Phase 30)
+                val isLive = groupName.contains("live", ignoreCase = true)
+                val bufferForPlaybackMs = if (isLive) 15_000 else 5_000 // 15s for Live, 5s for VOD
+                
                 val loadControl = DefaultLoadControl.Builder()
                     .setBufferDurationsMs(
                         30_000, // Min buffer (increased from default 15s to 30s)
                         60_000, // Max buffer (60s)
-                        5_000,  // Buffer for playback start (5s)
-                        5_000   // Buffer for playback after re-buffer (5s)
+                        bufferForPlaybackMs,  // Initial buffer before start
+                        bufferForPlaybackMs   // Buffer after re-buffer
                     )
+                    .setPrioritizeTimeOverSizeThresholds(true) // Crucial for live stability
                     .setBackBuffer(10_000, true) // Keep 10s of back buffer for seeking
                     .build()
 
