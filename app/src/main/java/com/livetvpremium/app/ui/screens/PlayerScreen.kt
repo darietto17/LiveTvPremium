@@ -239,14 +239,15 @@ fun PlayerScreen(
                              groupName.contains("tv", ignoreCase = true) ||
                              groupName.contains("channels", ignoreCase = true)
                              
-                val bufferForPlaybackMs = if (isLive) 15_000 else 5_000
+                val bufferForPlaybackMs = if (isLive) 5_000 else 2_500
+                val bufferAfterRebufferMs = if (isLive) 8_000 else 5_000
                 
                 val loadControl = DefaultLoadControl.Builder()
                     .setBufferDurationsMs(
-                        30_000, 
-                        60_000, 
+                        if (isLive) 30_000 else 15_000, 
+                        if (isLive) 60_000 else 50_000, 
                         bufferForPlaybackMs, 
-                        bufferForPlaybackMs
+                        bufferAfterRebufferMs
                     )
                     .setPrioritizeTimeOverSizeThresholds(true)
                     .setBackBuffer(10_000, true)

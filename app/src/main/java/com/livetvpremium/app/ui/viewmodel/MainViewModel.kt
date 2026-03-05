@@ -475,6 +475,7 @@ class MainViewModel(private val m3uParser: M3UParser) : ViewModel() {
     val downloadProgress: StateFlow<Float> = _downloadProgress
 
     fun downloadAndInstallUpdate(context: android.content.Context, downloadUrl: String) {
+        _latestRelease.value = null // Nascondi il dialogo immediatamente
         viewModelScope.launch(Dispatchers.IO) {
             _actionState.value = "Inizializzazione download..."
             _downloadProgress.value = 0f
