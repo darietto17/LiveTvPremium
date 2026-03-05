@@ -26,7 +26,8 @@ class SettingsRepository(private val context: Context) {
     }
 
     val tmdbApiKeyFlow: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[TMDB_API_KEY] ?: ""
+        val saved = preferences[TMDB_API_KEY]
+        if (saved.isNullOrEmpty()) "2b45f26a5e7788a16d6f59136f2635d9" else saved
     }
 
     val useVlcPlayerFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
