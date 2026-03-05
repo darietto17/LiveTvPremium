@@ -189,22 +189,26 @@ fun PlayerScreen(
                     .apply {
                         val mediaItemBuilder = MediaItem.Builder().setUri(Uri.parse(finalUrl))
                         
-                        // Help ExoPlayer identify M3U8 streams if they lack the correct extension or use proxy
-                        val isM3u8 = finalUrl.contains(".m3u8", ignoreCase = true) || 
-                            (!finalUrl.contains(".ts", ignoreCase = true) && !finalUrl.contains(".mp4", ignoreCase = true) && !finalUrl.contains(".mkv", ignoreCase = true) && (groupName.contains("live", ignoreCase = true) || finalUrl.contains("proxy", ignoreCase = true)))
-                            
-                        if (isM3u8) {
-                            mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
-                        } else if (finalUrl.contains(".ts", ignoreCase = true)) {
-                            mediaItemBuilder.setMimeType(MimeTypes.VIDEO_MP2T)
-                        } else if (finalUrl.contains(".mp4", ignoreCase = true)) {
-                            mediaItemBuilder.setMimeType(MimeTypes.VIDEO_MP4)
-                        } else if (finalUrl.contains(".mkv", ignoreCase = true)) {
-                            mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_MATROSKA)
-                        } else {
-                            // Se non c'è un'estensione chiara nell'URL, prova sempre M3U8 come fallback
-                            // La maggior parte dei server proxy VOD e live servono HLS
-                            mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
+                        // Refined MIME type detection
+                        val hasM3u8Ext = finalUrl.contains(".m3u8", ignoreCase = true)
+                        val hasMp4Ext = finalUrl.contains(".mp4", ignoreCase = true)
+                        val hasTsExt = finalUrl.contains(".ts", ignoreCase = true)
+                        val hasMkvExt = finalUrl.contains(".mkv", ignoreCase = true)
+                        
+                        when {
+                            hasM3u8Ext -> mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
+                            hasMp4Ext -> mediaItemBuilder.setMimeType(MimeTypes.VIDEO_MP4)
+                            hasTsExt -> mediaItemBuilder.setMimeType(MimeTypes.VIDEO_MP2T)
+                            hasMkvExt -> mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_MATROSKA)
+                            groupName.contains("live", ignoreCase = true) -> {
+                                // For Live channels without clear extension, assume HLS (most common)
+                                mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
+                            }
+                            else -> {
+                                // For VOD (Movies/Series) without clear extension, DO NOT force MimeType
+                                // and let ExoPlayer attempt auto-detection by sniffing the content.
+                                // This prevents "Input does not start with #EXTM3U" errors on progressive streams.
+                            }
                         }
  
                         setMediaItem(mediaItemBuilder.build())
