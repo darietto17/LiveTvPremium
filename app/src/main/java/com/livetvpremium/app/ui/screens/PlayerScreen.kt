@@ -226,8 +226,7 @@ fun PlayerScreen(
                         DefaultTsPayloadReaderFactory.FLAG_ALLOW_NON_IDR_KEYFRAMES or
                         DefaultTsPayloadReaderFactory.FLAG_DETECT_ACCESS_UNITS or
                         DefaultTsPayloadReaderFactory.FLAG_IGNORE_SPLICE_INFO_STREAM or
-                        DefaultTsPayloadReaderFactory.FLAG_ENABLE_HDMV_DTS_AUDIO_STREAMS or
-                        DefaultTsPayloadReaderFactory.FLAG_IGNORE_PCR
+                        DefaultTsPayloadReaderFactory.FLAG_ENABLE_HDMV_DTS_AUDIO_STREAMS
                     )
                     .setAdtsExtractorFlags(androidx.media3.extractor.ts.AdtsExtractor.FLAG_ENABLE_CONSTANT_BITRATE_SEEKING)
                     
