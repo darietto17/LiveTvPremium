@@ -333,6 +333,8 @@ https://vavoo.to/vavoo-iptv/play/375872832303fd120c6f38
 https://vavoo.to/vavoo-iptv/play/3889279895a867a5410d74
 #EXTINF:-1 tvg-id="mtv.hd.it" tvg-logo="" group-title="Musica",MTV
 https://vavoo.to/vavoo-iptv/play/3212860676dcc8c28a2be1
+#EXTINF:-1 tvg-id="" tvg-logo="https://github.com/tv-logo/tv-logos/blob/main/countries/serbia/mtv-hits-rs.png?raw=true" group-title="Musica",MTV HITS
+https://vavoo.to/vavoo-iptv/play/3446813098b031eef6dc22
 #EXTINF:-1 tvg-id="" tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/national-geographic-it.png" group-title="Documentari",NAT GEO (1)
 https://vavoo.to/vavoo-iptv/play/1735702308f63b4637e8ce
 #EXTINF:-1 tvg-id="" tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/national-geographic-it.png" group-title="Documentari",NAT GEO (2)
@@ -593,6 +595,8 @@ https://vavoo.to/vavoo-iptv/play/354961873760dbb54cfa7
 https://vavoo.to/vavoo-iptv/play/46428198113d67e3a4e0e
 #EXTINF:-1 tvg-id="sky.investigation.it" tvg-logo="" group-title="Altri",SKY INVESTIGATION
 https://vavoo.to/vavoo-iptv/play/19686407898d20b9ce24d1
+#EXTINF:-1 tvg-id="sky.nature.it" tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-nature-it.png" group-title="Documentari",SKY NATURE
+https://vavoo.to/vavoo-iptv/play/3810188456875f4898bef2
 #EXTINF:-1 tvg-id="" tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-primafila-it.png" group-title="Cinema",SKY PRIMAFILA 1 (1)
 https://vavoo.to/vavoo-iptv/play/194468239430d8fe263231
 #EXTINF:-1 tvg-id="" tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/sky-primafila-it.png" group-title="Cinema",SKY PRIMAFILA 1 (2)
@@ -932,16 +936,7 @@ https://dlhd.dad/watch.php?id=870
 #EXTINF:-1 tvg-id="italyserieanapolivstorino" tvg-name="All Soccer Events | Italy - Serie A : Napoli vs Torino (21:45)" tvg-logo="https://raw.githubusercontent.com/darietto17/TV/main/logos/Napoli_vs_Torino.png" group-title="Sport",All Soccer Events | Italy - Serie A : Napoli vs Torino (21:45)
 https://dlhd.dad/watch.php?id=877
 
-#EXTINF:-1 tvg-id="2026bnpparibasopentennisatpwtafirstround" tvg-name="Tennis | 2026 BNP Paribas Open Tennis ATP/WTA First Round (05:00)" tvg-logo="https://assets.stickpng.com/images/626658201e92f9aac65b5bb4.png" group-title="Eventi Live",Tennis | 2026 BNP Paribas Open Tennis ATP/WTA First Round (05:00)
-https://dlhd.dad/watch.php?id=576
-
-#EXTINF:-1 tvg-id="formula2qatarairwaysaustraliangpqualifying" tvg-name="Motorsport | Formula 2 : Qatar Airways Australian GP - Qualifying (06:00)" tvg-logo="https://143025518.cdn6.editmysite.com/uploads/1/4/3/0/143025518/s575460209305073383_p5545_i2_w800.png" group-title="Sport",Motorsport | Formula 2 : Qatar Airways Australian GP - Qualifying (06:00)
-https://dlhd.dad/watch.php?id=577
-
 #EXTINF:-1 tvg-id="formula1qatarairwaysaustraliangppractice2" tvg-name="Motorsport | Formula 1 : Qatar Airways Australian GP - Practice 2 (07:00)" tvg-logo="https://www.dtti.it/wp-content/uploads/2022/07/formula-1-logo-0.png" group-title="Sport",Motorsport | Formula 1 : Qatar Airways Australian GP - Practice 2 (07:00)
-https://dlhd.dad/watch.php?id=577
-
-#EXTINF:-1 tvg-id="formula2qatarairwaysaustraliangpsprintrace" tvg-name="Motorsport | Formula 2 : Qatar Airways Australian GP - Sprint Race (05:10)" tvg-logo="https://143025518.cdn6.editmysite.com/uploads/1/4/3/0/143025518/s575460209305073383_p5545_i2_w800.png" group-title="Sport",Motorsport | Formula 2 : Qatar Airways Australian GP - Sprint Race (05:10)
 https://dlhd.dad/watch.php?id=577
 
 #EXTINF:-1 tvg-id="valdifassawomensdownhillworldcupday1" tvg-name="Alpine Ski | Val di Fassa | Women's Downhill World Cup | Day 1 (12:15)" tvg-logo="https://ostwest-reisen.eu/italy_all_hotels/image/italien_region_500.png" group-title="Eventi Live",Alpine Ski | Val di Fassa | Women's Downhill World Cup | Day 1 (12:15)
