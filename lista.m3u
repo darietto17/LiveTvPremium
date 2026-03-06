@@ -333,8 +333,6 @@ https://vavoo.to/vavoo-iptv/play/375872832303fd120c6f38
 https://vavoo.to/vavoo-iptv/play/3889279895a867a5410d74
 #EXTINF:-1 tvg-id="mtv.hd.it" tvg-logo="" group-title="Musica",MTV
 https://vavoo.to/vavoo-iptv/play/3212860676dcc8c28a2be1
-#EXTINF:-1 tvg-id="" tvg-logo="https://github.com/tv-logo/tv-logos/blob/main/countries/serbia/mtv-hits-rs.png?raw=true" group-title="Musica",MTV HITS
-https://vavoo.to/vavoo-iptv/play/3446813098b031eef6dc22
 #EXTINF:-1 tvg-id="" tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/national-geographic-it.png" group-title="Documentari",NAT GEO (1)
 https://vavoo.to/vavoo-iptv/play/1735702308f63b4637e8ce
 #EXTINF:-1 tvg-id="" tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/national-geographic-it.png" group-title="Documentari",NAT GEO (2)
@@ -469,10 +467,8 @@ https://vavoo.to/vavoo-iptv/play/3902650955a82543dc27a4
 https://vavoo.to/vavoo-iptv/play/4031388312f5ebcfc7dc6d
 #EXTINF:-1 tvg-id="rdssocialtv.it" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/RDS-Logo.png/260px-RDS-Logo.png" group-title="Musica",RDS SOCIAL TV
 https://vavoo.to/vavoo-iptv/play/36560804080912cdf76cbf
-#EXTINF:-1 tvg-id="real.time.it" tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/real-time-it.png" group-title="Intrattenimento",REAL TIME (1)
+#EXTINF:-1 tvg-id="real.time.it" tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/real-time-it.png" group-title="Intrattenimento",REAL TIME
 https://vavoo.to/vavoo-iptv/play/157497519660249c278f94
-#EXTINF:-1 tvg-id="real.time.it" tvg-logo="https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/italy/real-time-it.png" group-title="Intrattenimento",REAL TIME (2)
-https://vavoo.to/vavoo-iptv/play/2251241999722578d55332
 #EXTINF:-1 tvg-id="" tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Reggio_TV_logo.png/640px-Reggio_TV_logo.png" group-title="Altri",REGGIO TV
 https://vavoo.to/vavoo-iptv/play/216554978929adb39fe170
 #EXTINF:-1 tvg-id="" tvg-logo="https://github.com/tv-logo/tv-logos/blob/main/countries/italy/rei-tv-it.png?raw=true" group-title="Altri",REI TV
@@ -935,9 +931,6 @@ https://dlhd.dad/watch.php?id=870
 
 #EXTINF:-1 tvg-id="italyserieanapolivstorino" tvg-name="All Soccer Events | Italy - Serie A : Napoli vs Torino (21:45)" tvg-logo="https://raw.githubusercontent.com/darietto17/TV/main/logos/Napoli_vs_Torino.png" group-title="Sport",All Soccer Events | Italy - Serie A : Napoli vs Torino (21:45)
 https://dlhd.dad/watch.php?id=877
-
-#EXTINF:-1 tvg-id="formula1qatarairwaysaustraliangppractice2" tvg-name="Motorsport | Formula 1 : Qatar Airways Australian GP - Practice 2 (07:00)" tvg-logo="https://www.dtti.it/wp-content/uploads/2022/07/formula-1-logo-0.png" group-title="Sport",Motorsport | Formula 1 : Qatar Airways Australian GP - Practice 2 (07:00)
-https://dlhd.dad/watch.php?id=577
 
 #EXTINF:-1 tvg-id="valdifassawomensdownhillworldcupday1" tvg-name="Alpine Ski | Val di Fassa | Women's Downhill World Cup | Day 1 (12:15)" tvg-logo="https://ostwest-reisen.eu/italy_all_hotels/image/italien_region_500.png" group-title="Eventi Live",Alpine Ski | Val di Fassa | Women's Downhill World Cup | Day 1 (12:15)
 https://dlhd.dad/watch.php?id=851
