@@ -63754,5 +63754,43 @@
       80
     ],
     "cached_at": "2026-03-04T23:36:37.311080"
+  },
+  "315755": {
+    "id": 315755,
+    "name": "A Friend, A Murderer: Il caso che ha sconvolto la Danimarca",
+    "original_name": "En ven, en morder",
+    "first_air_date": "2026-03-05",
+    "vote_average": 8.5,
+    "poster_path": "/t0rkBfR1u1JbdZ687cNjOZAgIAx.jpg",
+    "genre_ids": [
+      99,
+      80
+    ],
+    "cached_at": "2026-03-06T06:33:31.812993"
+  },
+  "285739": {
+    "id": 285739,
+    "name": "Vladimir",
+    "original_name": "Vladimir",
+    "first_air_date": "2026-03-05",
+    "vote_average": 9.1,
+    "poster_path": "/j02VBIGVIk2OTwTUZ1YzyzcONAy.jpg",
+    "genre_ids": [
+      18,
+      35
+    ],
+    "cached_at": "2026-03-06T06:33:31.813935"
+  },
+  "314297": {
+    "id": 314297,
+    "name": "Blue Therapy",
+    "original_name": "Blue Therapy",
+    "first_air_date": "2026-03-04",
+    "vote_average": 0.0,
+    "poster_path": "/H8K1osuUf7OsMbtSVPvXJlcnWS.jpg",
+    "genre_ids": [
+      10764
+    ],
+    "cached_at": "2026-03-06T06:33:31.952792"
   }
 }
