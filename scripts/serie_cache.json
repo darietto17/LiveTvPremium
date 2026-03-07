@@ -63792,5 +63792,44 @@
       10764
     ],
     "cached_at": "2026-03-06T06:33:31.952792"
+  },
+  "313338": {
+    "id": 313338,
+    "name": "Il serial killer di TikTok",
+    "original_name": "El asesino de TikTok",
+    "first_air_date": "2026-03-06",
+    "vote_average": 6.0,
+    "poster_path": "/giINp6zBiLd78VVlSHM1AUaDKf3.jpg",
+    "genre_ids": [
+      99,
+      80
+    ],
+    "cached_at": "2026-03-07T06:24:42.521137"
+  },
+  "314658": {
+    "id": 314658,
+    "name": "Avvocato Ligas",
+    "original_name": "Avvocato Ligas",
+    "first_air_date": "2026-03-05",
+    "vote_average": 0.0,
+    "poster_path": "/vZJsHSCcS42IK1SA9sR0Un10coE.jpg",
+    "genre_ids": [
+      18
+    ],
+    "cached_at": "2026-03-07T06:24:42.563683"
+  },
+  "281016": {
+    "id": 281016,
+    "name": "Boyfriend on Demand",
+    "original_name": "월간남친",
+    "first_air_date": "2026-03-06",
+    "vote_average": 9.667,
+    "poster_path": "/eg98LLKWFBZXfgvLOyUNzV27Wmi.jpg",
+    "genre_ids": [
+      10765,
+      35,
+      18
+    ],
+    "cached_at": "2026-03-07T06:24:42.662325"
   }
 }
